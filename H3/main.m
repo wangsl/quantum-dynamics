@@ -3,9 +3,9 @@
 
 function [] = main(jRot, nVib)
 
-clear all
-close all
-clc
+%clear all
+%close all
+%clc
 
 format long
 
@@ -18,7 +18,7 @@ global UseLSTH
 global H2eV 
 global H3Data
 
-addpath(genpath('/home/wang/matlab/quantum-dynamics'));
+%addpath(genpath('/home/wang/matlab/quantum-dynamics'));
 %addpath(genpath('/home/wang/matlab/quantum-dynamics/H3'));
 
 setenv('OMP_NUM_THREADS', '20');
@@ -80,7 +80,7 @@ fprintf(' Dviding surface: %.8f\n', r2Div);
 
 % angle:
 
-dimensions = 2;
+dimensions = 3;
 
 if dimensions == 2 
   % for 2 dimensional case
