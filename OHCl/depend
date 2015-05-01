@@ -1,0 +1,2 @@
+matutils.o: /share/apps/matlab/2015a/extern/include/mex.h /share/apps/matlab/2015a/extern/include/matrix.h /share/apps/matlab/2015a/extern/include/tmwtypes.h matutils.h /home/wang/matlab/quantum-dynamics/common/fort.h
+OHClKSGMex.o: /home/wang/matlab/quantum-dynamics/common/fort.h /share/apps/matlab/2015a/extern/include/mex.h /share/apps/matlab/2015a/extern/include/matrix.h /share/apps/matlab/2015a/extern/include/tmwtypes.h matutils.h
