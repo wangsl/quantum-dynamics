@@ -2,7 +2,7 @@
 
 # $Id$
 
-git add *.[FChm] *.pl *.sh Makefile
+git add *.[FChm] *.pl *.sh Makefile *.inc
 
 #svnId *.[FChm] *.pl *.sh *.inc Makefile
 
