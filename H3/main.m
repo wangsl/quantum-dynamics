@@ -46,7 +46,7 @@ time.steps = int32(0);
 
 % r1: R
 
-r1.n = int32(512);
+r1.n = int32(256);
 r1.r = linspace(0.4, 14.0, r1.n);
 r1.dr = r1.r(2) - r1.r(1);
 r1.mass = masses(1)*(masses(2)+masses(3))/(masses(1)+masses(2)+masses(3));
@@ -60,7 +60,7 @@ dump1.dump = WoodsSaxon(dump1.Cd, dump1.xd, r1.r);
 
 % r2: r
 
-r2.n = int32(512);
+r2.n = int32(256);
 r2.r = linspace(0.4, 10.0, r2.n);
 r2.dr = r2.r(2) - r2.r(1);
 r2.mass = masses(2)*masses(3)/(masses(2)+masses(3));
@@ -90,8 +90,8 @@ if dimensions == 2
   theta.w = 2.0;
 else 
   % for 3 dimensional case
-  theta.n = int32(180);
-  theta.m = int32(120);
+  theta.n = int32(120);
+  theta.m = int32(100);
   [ theta.x, theta.w ] = GaussLegendre(theta.n);
 end
   

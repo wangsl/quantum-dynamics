@@ -26,7 +26,10 @@ end
 
 H = H/(2*mu*dr*dr);
 
-V = H2PES(r)' + jRot*(jRot+1)./(2*mu*r.^2);
+H2V = H2PES(r);
+H2V = reshape(H2V, size(r));
+
+V = H2V + jRot*(jRot+1)./(2*mu*r.^2);
 V = reshape(V, [1, numel(V)]);
 
 % Get diagonal elements
@@ -43,6 +46,4 @@ e = e(nVbs);
 psi = vecs(:, nVbs)/sqrt(dr);
 
 return
-
-
 
