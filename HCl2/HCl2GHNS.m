@@ -23,18 +23,17 @@
 
 function [ VHCl2 ] = HCl2GHNS(R1, R2, R3)
 
-% convert Rs from Angstrom to Bohr
-B2A = 0.52917721092;
-R1 = R1/B2A;
-R2 = R2/B2A;
-R3 = R3/B2A;
+% convert Rs from Bohr to Angstrom
+B2A = 0.529177249;
+R1 = R1*B2A;
+R2 = R2*B2A;
+R3 = R3*B2A;
 
 VHCl2 = VHCl(R1) + VCl2(R2) + VHCl(R3) + V3HCl2(R1, R2, R3);
 
 % convert potential energy from eV to atomic units
 H2eV = 27.2116;
 VHCl2 = VHCl2/H2eV;
-
 return
 
 function [ V ] = VCl2(R)

@@ -11,6 +11,3 @@ exit
 git commit -m "comments"
 
 git push origin master
-
-
-
