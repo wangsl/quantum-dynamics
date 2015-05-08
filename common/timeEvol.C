@@ -3,6 +3,7 @@
 
 // http://www.walkingrandomly.com/?p=1795
 
+#include "timer.h"
 #include "timeEvol.h"
 #include "mat.h"
 
@@ -650,7 +651,13 @@ void TimeEvolution::time_evolution()
   const int &total_steps = time.total_steps;
   int &steps = time.steps;
 
+  WallTimer wall_timer;
+  CPUTimer cpu_timer;
+  
   for(int i_step = 0; i_step < total_steps; i_step++) {
+
+    wall_timer.reset();
+    cpu_timer.reset();
     
     cout << "\n Step: " << i_step << endl;
     
@@ -668,6 +675,9 @@ void TimeEvolution::time_evolution()
       
     if(options.wave_to_matlab)
       wavepacket_to_matlab(options.wave_to_matlab);
+    
+    cout << " Wall time: " << wall_timer.time() << " s, CPU time: "
+	 << cpu_timer.time() << " s" << endl;
     
     steps++;
     cout.flush();
