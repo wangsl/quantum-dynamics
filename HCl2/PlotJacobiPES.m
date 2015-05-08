@@ -14,7 +14,7 @@ masses = [ mH, mCl, mCl ];
 R = 3.0:0.01:14.0;
 r = 2.8:0.01:9.0;
 
-theta = 180.0;
+theta = 0.0;
 theta = [ theta/180*pi ];
 
 V = HCl2PESJacobi(R, r, theta, masses);

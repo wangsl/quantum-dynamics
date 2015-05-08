@@ -32,7 +32,7 @@ R3 = R3*B2A;
 VHCl2 = VHCl(R1) + VCl2(R2) + VHCl(R3) + V3HCl2(R1, R2, R3);
 
 % convert potential energy from eV to atomic units
-H2eV = 27.2116;
+H2eV = 27.21138505;
 VHCl2 = VHCl2/H2eV;
 return
 
