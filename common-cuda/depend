@@ -1,0 +1,16 @@
+$(O)/die.o: die.C die.h matutils.h 
+$(O)/fftwinterface.o: fftwinterface.C fftwinterface.h complex.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fftwinterface.h
+$(O)/GaussLegendreMex.o: GaussLegendreMex.C fort.h
+$(O)/indent.o: indent.C indent.h
+$(O)/MatlabStructures.o: MatlabStructures.C MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fftwinterface.h complex.h fftwinterface.h
+$(O)/MatlabStructuresio.o: MatlabStructuresio.C indent.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h fmacro.h rvecalgo.h rmatalgo.h fint.h
+$(O)/matutils.o: matutils.C matutils.h fort.h
+$(O)/out.o: out.C out.h die.h matutils.h fmacro.h
+$(O)/rmatalgo.o: rmatalgo.C rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h
+$(O)/rmato.o: rmato.C rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h out.h
+$(O)/sortcpp.o: sortcpp.C fort.h
+$(O)/timeEvolCUDA.o: timeEvolCUDA.C timer.h timeEvolCUDA.h complex.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fftwinterface.h fftwinterface.h matlabArray.h
+$(O)/TimeEvolutionMexCUDA.o: TimeEvolutionMexCUDA.C matutils.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fort.h timeEvolCUDA.h complex.h fftwinterface.h fftwinterface.h matlabArray.h
+$(O)/wave2matlab.o: wave2matlab.C str.h die.h matutils.h
+$(O)/zeros.o: zeros.C fort.h complex.h
+$(O)/harmonic.o : harmonic.cu complex.h
