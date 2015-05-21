@@ -2,32 +2,6 @@
 #include "timeEvolCUDA.h"
 #include "cumath.h"
 
-//#include "cumath.cu"
-
-template<class T1, class T2, class T3>		
-static __global__ void DotProduct(const T1 *r, const T2 *c, T3 *dot, const int size)
-{
-  extern __shared__ T3 s[];
-  
-  // dot should be zero
-  s[threadIdx.x] = *dot; 
-  const int j = threadIdx.x + blockDim.x*blockIdx.x;
-  if(j < size)
-    s[threadIdx.x] = r[j]*c[j];
-  
-  __syncthreads();
-  
-  // do reduction in shared memory
-  for(int i = blockDim.x/2; i > 0; i /= 2) {
-    if(threadIdx.x < i)
-      s[threadIdx.x] += s[threadIdx.x+i];
-    __syncthreads();
-  }
-  
-  if(threadIdx.x == 0) 
-    atomicAdd(dot, s[0]);
-}
-
 void TimeEvolutionCUDA::allocate_device_memories()
 { 
   cout << " Allocate device memory" << endl;
@@ -215,7 +189,7 @@ void TimeEvolutionCUDA::cuda_psi_normal_test()
   
   sdkResetTimer(&timer); sdkStartTimer(&timer);
   checkCudaErrors(cudaMemset(mod_dev+n_theta, 0, sizeof(Complex)));
-  DotProduct<double, Complex, Complex>
+  DotProduct<double, Complex, Complex>					\
     <<<n_theta/n_threads+1, n_threads, n_threads*sizeof(Complex)>>>(w_dev, mod_dev, mod_dev+n_theta, n_theta);
   dot.zero();
   checkCudaErrors(cudaMemcpy(&dot, mod_dev+n_theta, sizeof(Complex), cudaMemcpyDeviceToHost));
