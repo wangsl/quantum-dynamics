@@ -2,7 +2,7 @@
 #include "timeEvolCUDA.h"
 #include "cumath.h"
 
-#include "cumath.cu"
+//#include "cumath.cu"
 
 template<class T1, class T2, class T3>		
 static __global__ void DotProduct(const T1 *r, const T2 *c, T3 *dot, const int size)

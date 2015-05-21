@@ -19,16 +19,16 @@ FFLAGS = -132
 
 NVCCINCLUDE = -I$(CUDA_ROOT)/samples/common/inc -I$(MATLAB_ROOT)/extern/include
 
-NVCCFLAGS = \
-        -gencode arch=compute_20,code=sm_20 \
+CUDAArchs= -gencode arch=compute_20,code=sm_20 \
         -gencode arch=compute_30,code=sm_30 \
         -gencode arch=compute_35,code=sm_35 \
         -gencode arch=compute_37,code=sm_37 \
         -gencode arch=compute_50,code=sm_50 \
         -gencode arch=compute_52,code=sm_52 \
         -gencode arch=compute_52,code=compute_52 \
-        -use_fast_math -O3  \
-        $(NVCCINCLUDE) $(TYPEDEF) -Xcompiler=\"-fPIC -pthread -fexceptions -m64\"
+	-Xcompiler=\"-fPIC -pthread -fexceptions -m64\"
+
+NVCCFLAGS = $(NVCCINCLUDE) $(CUDAArchs) -use_fast_math -O3 
 
 CXXFLAGS = -std=c++0x -I$(NVCCINCLUDE)
 
@@ -40,12 +40,16 @@ MEXA64Files = \
 	$(O)/TimeEvolutionMexCUDA.mexa64 \
 	$(O)/GaussLegendreMex.mexa64
 
+CUDAObjs = $(O)/harmonic.o $(O)/timeEvol2.o $(O)/cumath.o
+
+CUDALinkObj = $(O)/cudalink.o
+
 OBJS = $(O)/GaussLegendreMex.o $(O)/GaussLegendre.o $(O)/sortcpp.o \
 	$(O)/fftwinterface.o $(O)/timeEvolCUDA.o  $(O)/LegTransform.o \
 	$(O)/zeros.o $(O)/CRPAux.o $(O)/wave2matlab.o \
 	$(O)/Gradient3.o $(O)/matutils.o \
 	$(O)/MatlabStructures.o $(O)/MatlabStructuresio.o $(O)/out.o \
-	$(O)/harmonic.o  $(O)/timeEvol2.o #$(O)/cumath.o
+	$(CUDAObjs) $(CUDALinkObj)
 
 QMLibs = $(O)/libqmdyn.a
 
@@ -65,7 +69,10 @@ $(O)/%.o: %.F
 $(O)/%.o: %.F90
 	cd $(O) ; $(F90) $(FFLAGS) -c $(SRC)/$<
 $(O)/%.o: %.cu
-	cd $(O) ; $(NVCC) $(NVCCFLAGS) -c $(SRC)/$<
+	cd $(O) ; $(NVCC) $(NVCCFLAGS) -dc $(SRC)/$<
+
+$(CUDALinkObj): $(CUDAObjs)
+	cd $(O); $(NVCC) $(CUDAArchs) -dlink $(CUDAObjs) -o $(CUDALinkObj)
 
 %io.C: %.h
 	perl io.pl $<
@@ -77,7 +84,7 @@ $(O)/%.mexa64: $(O)/%.o $(QMLibs)
 	cd $(O); $(Link) -shared $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:
-	rm -f *.o *~ *.mod $(EXE) depend $(MEXA64Files) $(QMLibs) $(OBJS)
+	rm -f $(O)/* *.o *~ *.mod $(EXE) depend $(MEXA64Files) $(QMLibs) $(OBJS)
 
 depend :
 	$(CXX) $(CXXFLAGS) -MM *.[cC] | perl dep.pl > $@

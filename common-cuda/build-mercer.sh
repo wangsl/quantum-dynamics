@@ -57,8 +57,9 @@ function special_rules()
 
     local arg=
     for arg in $*; do
-	if [ "$arg" == "TimeEvolutionMex.mexa64" ]; then
-	      append_to_env_variable EXTRA_LINK_FLAGS "-Bstatic -L$MKL_ROOT/lib/intel64 -Wl,--start-group -lmkl_intel_ilp64 -lmkl_core -lmkl_intel_thread -Wl,--end-group -Bdynamic"
+	if [ "$arg" == "--device-link" ]; then
+	    export EXTRA_LINK_FLAGS=""
+	    export LDFLAGS=""
 	    return
 	fi
     done
