@@ -72,10 +72,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			      dump1, dump2, CRP);
   
   //time_evolCUDA.time_evolution();
-  //time_evolCUDA.test();
+  time_evolCUDA.test();
 
-  void cuda_test();
-  cuda_test();
+  //void cuda_test();
+  //cuda_test();
   
   std::cout.flush();
   std::cout.precision(np);

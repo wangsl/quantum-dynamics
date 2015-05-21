@@ -4,6 +4,17 @@
 #ifndef TIMEEVOL_CUDA_H
 #define TIMEEVOL_CUDA_H
 
+#ifdef __NVCC__
+#include <cuda_runtime.h>
+#include <helper_functions.h>
+#include <helper_cuda.h>
+#include <cublas_v2.h>
+#include <cufft.h>
+#define __DEVICE_HOST__ __device__ __host__
+#else
+#define __DEVICE_HOST__
+#endif
+
 #include <iostream>
 using namespace std;
 #include "complex.h"
@@ -75,6 +86,23 @@ private:
 
   Vec<FFTWInterface *> fftw_for_psi;
   Vec<FFTWInterface *> fftw_for_legendre_psi;
+
+  // Device data
+  double *pot_dev;
+  Complex *psi_dev;
+  double *work_dev;
+  double *w_dev;
+
+  // device functions
+  void allocate_device_memories();
+  void deallocate_device_memories();
+  void cuda_fft_test();
+  void cuda_fft_test_with_many_plan();
+
+  void cuda_psi_normal_test();
+  void cuda_psi_normal_test_with_stream();
+
+  // end of device functions
 
   void setup_fftw_interface_for_psi();
   void destroy_fftw_interface_for_psi();

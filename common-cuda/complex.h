@@ -17,25 +17,7 @@ using namespace std;
 #endif
 
 #ifndef Pi
-#define Pi M_PI //3.14159265358979323846264338328
-#endif
-
-#ifdef __NVCC__
-__device__ double atomicAdd(double *address, double val)
-{
-  unsigned long long int* address_as_ull = (unsigned long long int*)address;
-  unsigned long long int old = *address_as_ull, assumed;
-  do {
-    assumed = old;
-    old = atomicCAS(address_as_ull, assumed,
-                    __double_as_longlong(val + __longlong_as_double(assumed)));
-  } while (assumed != old);
-  return __longlong_as_double(old);
-}
-
-__device__ double atomicAdd(double &address, const double &val)
-{ return atomicAdd(&address, val); }
-
+#define Pi M_PI 
 #endif
 
 class Complex
@@ -169,16 +151,6 @@ class Complex
     sprintf(tmp, "(%.8f, %.8f)", re, im); 
     return tmp;
   }
-  //__DEVICE_HOST__ void show() const { printf(); }
-
-#ifdef __NVCC__
-  static __device__ void atomicAdd(Complex &sum, const Complex &val)
-  { ::atomicAdd(sum.re, val.re); ::atomicAdd(sum.im, val.im); }
-  
-  static __device__ void atomicAdd(Complex *sum, const Complex &val)
-  { atomicAdd(*sum, val); }
-#endif
-
 };
 
 #endif /* COMPLEX_H */  

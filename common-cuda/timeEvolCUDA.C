@@ -55,17 +55,23 @@ TimeEvolutionCUDA::TimeEvolutionCUDA(const MatlabArray<double> &m_pot_,
   weight_legendre(0),
   dump(0),
   exp_ienergy_dt(0), exp_ienergy_t(0),
-  psi_surface(0), d_psi_surface(0), fai_surface(0), d_fai_surface(0)
+  psi_surface(0), d_psi_surface(0), fai_surface(0), d_fai_surface(0),
+  // device memory
+  pot_dev(0), psi_dev(0), work_dev(0), w_dev(0)
 { 
   pot = m_pot.data;
   insist(pot);
 
   psi = m_psi.data;
   insist(psi);
+
+  allocate_device_memories();
 } 
 
 TimeEvolutionCUDA::~TimeEvolutionCUDA()
 {
+  cout << " TimeEvolutionCUDA Destructor" << endl;
+
   pot = 0;
   psi = 0;
   
@@ -84,6 +90,9 @@ TimeEvolutionCUDA::~TimeEvolutionCUDA()
   if(d_psi_surface) { delete [] d_psi_surface; d_psi_surface = 0; }
   if(fai_surface) { delete [] fai_surface; fai_surface = 0; }
   if(d_fai_surface) { delete [] d_fai_surface; d_fai_surface = 0; }
+
+  // device memory
+  deallocate_device_memories();
 }
 
 Complex * &TimeEvolutionCUDA::legendre_psi()
@@ -607,9 +616,10 @@ void TimeEvolutionCUDA::evolution_with_kinetic_dt()
 
 void TimeEvolutionCUDA::test()
 {
-  cout << "TimeEvolutionCUDA::test()" << endl;
- 
-
+  cout << " TimeEvolutionCUDA::test()" << endl;
+  //cuda_psi_normal_test();
+  //cuda_fft_test();
+  cuda_fft_test_with_many_plan();
 }
 
 void TimeEvolutionCUDA::evolution_dt()

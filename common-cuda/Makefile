@@ -15,11 +15,9 @@ NVCC = nvcc
 
 CFLAGS =  
 
-CXXFLAGS = -std=c++0x -I$(MATLAB_ROOT)/extern/include
-
 FFLAGS = -132
 
-NVCCINCLUDE = -I$(CUDA_ROOT)/samples/common/inc
+NVCCINCLUDE = -I$(CUDA_ROOT)/samples/common/inc -I$(MATLAB_ROOT)/extern/include
 
 NVCCFLAGS = \
         -gencode arch=compute_20,code=sm_20 \
@@ -29,8 +27,10 @@ NVCCFLAGS = \
         -gencode arch=compute_50,code=sm_50 \
         -gencode arch=compute_52,code=sm_52 \
         -gencode arch=compute_52,code=compute_52 \
-        -use_fast_math -O3 \
+        -use_fast_math -O3  \
         $(NVCCINCLUDE) $(TYPEDEF) -Xcompiler=\"-fPIC -pthread -fexceptions -m64\"
+
+CXXFLAGS = -std=c++0x -I$(NVCCINCLUDE)
 
 Link = $(CXX)
 
@@ -45,7 +45,7 @@ OBJS = $(O)/GaussLegendreMex.o $(O)/GaussLegendre.o $(O)/sortcpp.o \
 	$(O)/zeros.o $(O)/CRPAux.o $(O)/wave2matlab.o \
 	$(O)/Gradient3.o $(O)/matutils.o \
 	$(O)/MatlabStructures.o $(O)/MatlabStructuresio.o $(O)/out.o \
-	$(O)/harmonic.o
+	$(O)/harmonic.o  $(O)/timeEvol2.o #$(O)/cumath.o
 
 QMLibs = $(O)/libqmdyn.a
 
