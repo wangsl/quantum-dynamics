@@ -2,6 +2,17 @@
 #include "timeEvolCUDA.h"
 #include "cumath.h"
 
+#if 0
+__constant__ __device__ double dt;
+
+__global__ void setup_exp_ipot_dt_on_device(Complex *exp_pot, const double *pot, int n)
+{
+  const int j = threadIdx.x + blockDim.x*blockIdx.x;
+  if(j < n) 
+    exp_pot[j] = exp(Complex(0.0, -dt)*pot[j]);
+}
+#endif
+
 void TimeEvolutionCUDA::allocate_device_memories()
 { 
   cout << " Allocate device memory" << endl;
@@ -10,6 +21,9 @@ void TimeEvolutionCUDA::allocate_device_memories()
   const int &n_theta = theta.n;
 
   cout << n1 << " " << n2 << " " << n_theta << endl;
+
+  // time step
+  //checkCudaErrors(cudaMemcpyToSymbol(dt, &time.time_step, sizeof(double)));
 
   if(!pot_dev) {
     checkCudaErrors(cudaMalloc(&pot_dev, n1*n2*n_theta*sizeof(double)));
@@ -44,6 +58,7 @@ void TimeEvolutionCUDA::deallocate_device_memories()
   if(psi_dev) { checkCudaErrors(cudaFree(psi_dev)); psi_dev = 0; }
   if(work_dev) { checkCudaErrors(cudaFree(work_dev)); work_dev = 0; }
   if(w_dev) { checkCudaErrors(cudaFree(w_dev)); w_dev = 0; }
+  if(exp_ipot_dt_dev) { checkCudaErrors(cudaFree(exp_ipot_dt_dev)); exp_ipot_dt_dev = 0; }
 }
 
 void TimeEvolutionCUDA::cuda_fft_test()
@@ -197,7 +212,6 @@ void TimeEvolutionCUDA::cuda_psi_normal_test()
   dot *= r1.dr*r2.dr;
   cout << dot << endl;
 }
-
 
 void TimeEvolutionCUDA::cuda_psi_normal_test_with_stream()
 {

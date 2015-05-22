@@ -57,7 +57,7 @@ TimeEvolutionCUDA::TimeEvolutionCUDA(const MatlabArray<double> &m_pot_,
   exp_ienergy_dt(0), exp_ienergy_t(0),
   psi_surface(0), d_psi_surface(0), fai_surface(0), d_fai_surface(0),
   // device memory
-  pot_dev(0), psi_dev(0), work_dev(0), w_dev(0)
+  pot_dev(0), psi_dev(0), work_dev(0), w_dev(0), exp_ipot_dt_dev(0)
 { 
   pot = m_pot.data;
   insist(pot);

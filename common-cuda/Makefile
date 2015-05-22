@@ -17,7 +17,7 @@ CFLAGS =
 
 FFLAGS = -132
 
-NVCCINCLUDE = -I$(CUDA_ROOT)/samples/common/inc -I$(MATLAB_ROOT)/extern/include
+NVCCINCLUDE = -I/home/wang/matlab/quantum-dynamics/common-cuda -I$(CUDA_ROOT)/samples/common/inc -I$(MATLAB_ROOT)/extern/include
 
 CUDAArchs= -gencode arch=compute_20,code=sm_20 \
         -gencode arch=compute_30,code=sm_30 \
@@ -40,7 +40,9 @@ MEXA64Files = \
 	$(O)/TimeEvolutionMexCUDA.mexa64 \
 	$(O)/GaussLegendreMex.mexa64
 
-CUDAObjs = $(O)/harmonic.o $(O)/timeEvol2.o $(O)/cumath.o
+CUDAObjs = $(O)/harmonic.o $(O)/timeEvol2.o $(O)/cumath.o $(O)/evolutionCUDA2.o \
+	$(O)/myreduction.o
+#	$(O)/reduction_kernel.o
 
 CUDALinkObj = $(O)/cudalink.o
 
@@ -49,6 +51,7 @@ OBJS = $(O)/GaussLegendreMex.o $(O)/GaussLegendre.o $(O)/sortcpp.o \
 	$(O)/zeros.o $(O)/CRPAux.o $(O)/wave2matlab.o \
 	$(O)/Gradient3.o $(O)/matutils.o \
 	$(O)/MatlabStructures.o $(O)/MatlabStructuresio.o $(O)/out.o \
+	$(O)/evolutionCUDA.o \
 	$(CUDAObjs) $(CUDALinkObj)
 
 QMLibs = $(O)/libqmdyn.a

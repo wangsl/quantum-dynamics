@@ -92,6 +92,7 @@ private:
   Complex *psi_dev;
   double *work_dev;
   double *w_dev;
+  Complex *exp_ipot_dt_dev;
 
   // device functions
   void allocate_device_memories();

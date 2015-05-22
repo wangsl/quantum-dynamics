@@ -10,6 +10,7 @@
 #include "MatlabStructures.h"
 #include "fort.h"
 #include "timeEvolCUDA.h"
+#include "evolutionCUDA.h"
 
 extern "C" int FORT(myisnan)(const double &x)
 {
@@ -68,11 +69,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
   insist(mxPtr);
   CummulativeReactionProbabilities CRP(mxPtr);
   
-  TimeEvolutionCUDA time_evolCUDA(pot, psi, r1, r2, theta, time, options, 
-			      dump1, dump2, CRP);
+  EvolutionCUDA evolCUDA(pot, psi, r1, r2, theta, time, options, 
+			  dump1, dump2, CRP);
   
   //time_evolCUDA.time_evolution();
-  time_evolCUDA.test();
+  evolCUDA.test();
 
   //void cuda_test();
   //cuda_test();
