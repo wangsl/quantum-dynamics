@@ -18,7 +18,8 @@ EvolutionCUDA::EvolutionCUDA(const MatlabArray<double> &m_pot_,
   CRP(CRP_),
   // device memory
   pot_dev(0), psi_dev(0), work_dev(0), w_dev(0),
-  exp_ipot_dt_dev(0)
+  exp_ipot_dt_dev(0),
+  has_cublas_handle(0), has_cufft_plan(0)
 { 
   pot = m_pot.data;
   insist(pot);
@@ -38,18 +39,18 @@ EvolutionCUDA::~EvolutionCUDA()
 
   // device memory
   deallocate_device_memories();
-}template <class T, unsigned int blockSize, bool nIsPow2>
-__global__ void reduce6(T *g_idata, T *g_odata, unsigned int n);
+}
 
 void EvolutionCUDA::test()
 {
   cout << " EvolutionCUDA test" << endl;
-
-  module_for_psi();
-
+  
+  cout << " Module: " << module_for_psi() << endl;
   evolution_with_potential_dt();
-
   cout << " Potential energy: " << potential_energy() << endl;
 
-  module_for_psi_withou_streams();
+  cuda_fft_test();
+  
+  cout << " Module: " << module_for_psi() << endl;
+  cout << " Potential energy: " << potential_energy() << endl;
 }

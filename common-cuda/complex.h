@@ -30,8 +30,8 @@ class Complex
   __DEVICE_HOST__ Complex(double r = 0, double i = 0) : re(r), im(i) { }
   __DEVICE_HOST__ Complex(const Complex &c) : re(c.re), im(c.im) { }
   
-  //__DEVICE_HOST__ operator double *() { return (double *) this; }
-  //__DEVICE_HOST__ operator const double *() const { return (const double *) this; }
+  __DEVICE_HOST__ operator double *() { return (double *) this; }
+  __DEVICE_HOST__ operator const double *() const { return (const double *) this; }
   
   __DEVICE_HOST__ double real() const { return re; }
   __DEVICE_HOST__ double imag() const { return im; }

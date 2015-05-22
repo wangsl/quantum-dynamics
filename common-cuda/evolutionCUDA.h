@@ -56,17 +56,30 @@ private:
   double *w_dev;
   Complex *exp_ipot_dt_dev;
 
+  int has_cublas_handle;
+  int has_cufft_plan;
+
+#ifdef __NVCC__
+  cublasHandle_t cublas_handle;
+  cufftHandle cufft_plan;
+#endif
+  
+  void setup_cublas_handle();
+  void destroy_cublas_handle();
+
+  void setup_cufft_plan();
+  void destroy_cufft_plan();
+
   // device functions
   void allocate_device_memories();
   void deallocate_device_memories();
 
   double module_for_psi() const;
-  double module_for_psi_withou_streams() const;
-
   double potential_energy();
-  double potential_energy2();
   
   void evolution_with_potential_dt();
+
+  void cuda_fft_test();
 };
 
 #endif /* EVOLUTIONCUDA_H */
