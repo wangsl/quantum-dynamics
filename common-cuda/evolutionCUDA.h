@@ -55,6 +55,9 @@ private:
   double *work_dev;
   double *w_dev;
   Complex *exp_ipot_dt_dev;
+  Complex *legendre_dev;
+  Complex *weight_legendre_dev;
+  Complex *legendre_psi_dev;
 
   int has_cublas_handle;
   int has_cufft_plan;
@@ -70,6 +73,21 @@ private:
   void setup_cufft_plan();
   void destroy_cufft_plan();
 
+  void setup_legendre();
+  void setup_weight_legendre();
+  void setup_legendre_transform()
+  { 
+    setup_legendre();
+    setup_weight_legendre();
+    setup_legendre_psi();
+  }
+
+  void setup_legendre_psi();
+  void forward_legendre_transform();
+  void backward_legendre_transform();
+
+  void legendre_transform_test();
+  
   // device functions
   void allocate_device_memories();
   void deallocate_device_memories();
@@ -79,8 +97,10 @@ private:
   
   void evolution_with_potential_dt();
 
-  void cuda_fft_test();
+  void cuda_fft_test();  
 };
+
+void gpu_memory_usage();
 
 #endif /* EVOLUTIONCUDA_H */
 

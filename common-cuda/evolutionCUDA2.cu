@@ -13,6 +13,18 @@ static __global__ void _evolution_with_potential_dt_(Complex *psi, const double 
   if(j < n) psi[j] *= exp(Complex(0.0, -dt)*pot[j]);
 }
 
+void gpu_memory_usage()
+{
+  size_t free_byte ;
+  size_t total_byte ;
+  checkCudaErrors(cudaMemGetInfo(&free_byte, &total_byte));
+  
+  cout << " GPU memory usage:" 
+       << " used = " << (total_byte-free_byte)/1024.0/1024.0 << "MB,"
+       << " free = " << free_byte/1024.0/1024.0 << "MB,"
+       << " total = " << total_byte/1024.0/1024.0 << "MB" <<endl;
+}
+
 void EvolutionCUDA::allocate_device_memories()
 { 
   cout << " Allocate device memory" << endl;
@@ -64,6 +76,9 @@ void EvolutionCUDA::deallocate_device_memories()
   if(work_dev) { checkCudaErrors(cudaFree(work_dev)); work_dev = 0; }
   if(w_dev) { checkCudaErrors(cudaFree(w_dev)); w_dev = 0; }
   if(exp_ipot_dt_dev) { checkCudaErrors(cudaFree(exp_ipot_dt_dev)); exp_ipot_dt_dev = 0; }
+  if(legendre_dev) { checkCudaErrors(cudaFree(legendre_dev)); legendre_dev = 0; }
+  if(weight_legendre_dev) { checkCudaErrors(cudaFree(weight_legendre_dev)); weight_legendre_dev = 0; }
+  if(legendre_psi_dev) { checkCudaErrors(cudaFree(legendre_psi_dev)); legendre_psi_dev = 0; }
 
   destroy_cublas_handle();
   destroy_cufft_plan();
@@ -103,6 +118,55 @@ void EvolutionCUDA::destroy_cufft_plan()
   if(!has_cufft_plan) return;
   insist(cufftDestroy(cufft_plan) == CUFFT_SUCCESS);
   has_cufft_plan = 0;
+}
+
+void EvolutionCUDA::setup_legendre()
+{
+  if(legendre_dev) return;
+
+  const int &n_theta = theta.n;
+  const int m = theta.m + 1;
+  const RMat &P = theta.legendre;
+
+  Mat<Complex> P_complex(m, n_theta);
+  for(int k = 0; k < n_theta; k++) {
+    for(int l = 0; l < m; l++) {
+      P_complex(l,k) = Complex(P(l,k), 0.0);
+    }
+  }
+  
+  checkCudaErrors(cudaMalloc(&legendre_dev, m*n_theta*sizeof(Complex)));
+
+  checkCudaErrors(cudaMemcpy(legendre_dev, (const Complex *) P_complex,
+			     m*n_theta*sizeof(Complex), cudaMemcpyHostToDevice));
+}
+
+void EvolutionCUDA::setup_weight_legendre()
+{ 
+  if(weight_legendre_dev) return;
+
+  const int &n_theta = theta.n;
+  const int m = theta.m + 1;
+  
+  Mat<Complex> weight_legendre(n_theta, m);
+  
+  const double *w = theta.w;
+  const RMat &P = theta.legendre;
+
+  Mat<Complex> &wp = weight_legendre;
+  
+  for(int l = 0; l < m; l++) {
+    const double f = l+0.5;
+    for(int k = 0; k < n_theta; k++) {
+      wp(k,l) = Complex(f*w[k]*P(l,k), 0.0);
+    }
+  }
+  
+  checkCudaErrors(cudaMalloc(&weight_legendre_dev, m*n_theta*sizeof(Complex)));
+  
+  checkCudaErrors(cudaMemcpy(weight_legendre_dev, (const Complex *) weight_legendre,
+			     m*n_theta*sizeof(Complex), cudaMemcpyHostToDevice));
+  
 }
 
 void EvolutionCUDA::evolution_with_potential_dt()
@@ -175,6 +239,18 @@ double EvolutionCUDA::module_for_psi() const
   return sum;
 }
 
+void EvolutionCUDA::setup_legendre_psi()
+{
+  if(legendre_psi_dev) return;
+
+  const int &n1 = r1.n;
+  const int &n2 = r2.n;
+  const int m = theta.m + 1;
+  
+  checkCudaErrors(cudaMalloc(&legendre_psi_dev, n1*n2*m*sizeof(Complex)));
+  checkCudaErrors(cudaMemset(legendre_psi_dev, 0, n1*n2*m*sizeof(Complex)));
+}
+
 void EvolutionCUDA::cuda_fft_test()
 { 
   const int &n1 = r1.n;
@@ -205,7 +281,62 @@ void EvolutionCUDA::cuda_fft_test()
     const double s = 1.0/(n1*n2);
     insist(cublasZdscal(cublas_handle, n1*n2*n_theta, &s, (cuDoubleComplex *) psi_dev, 1) 
 	   == CUBLAS_STATUS_SUCCESS);
+
+    legendre_transform_test();
     
     sdkStopTimer(&timer); cout << "GPU time: " << sdkGetAverageTimerValue(&timer)*1e-3 << endl;
   }
+}
+
+void EvolutionCUDA::forward_legendre_transform()
+{
+  //cout << " Forward Legendre transform" << endl;
+
+
+  setup_legendre_transform();
+
+  const int &n1 = r1.n;
+  const int &n2 = r2.n;
+  const int &n_theta = theta.n;
+  const int m = theta.m + 1;
+  
+  const Complex one(1.0, 0.0);
+  const Complex zero(0.0, 0.0);
+
+  insist(cublasZgemm(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
+		     n1*n2, m, n_theta, 
+		     (const cuDoubleComplex *) &one,
+		     (const cuDoubleComplex *) psi_dev, n1*n2,
+		     (const cuDoubleComplex *) weight_legendre_dev, n_theta,
+		     (const cuDoubleComplex *) &zero,
+		     (cuDoubleComplex *) legendre_psi_dev, n1*n2) == CUBLAS_STATUS_SUCCESS);
+}
+
+void EvolutionCUDA::backward_legendre_transform()
+{
+  //cout << " Backward Legendre transform" << endl;
+  
+  setup_legendre_transform();
+
+  const int &n1 = r1.n;
+  const int &n2 = r2.n;
+  const int &n_theta = theta.n;
+  const int m = theta.m + 1;
+  
+  const Complex one(1.0, 0.0);
+  const Complex zero(0.0, 0.0);
+  
+  insist(cublasZgemm(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
+		     n1*n2, n_theta, m,
+		     (const cuDoubleComplex *) &one,
+		     (const cuDoubleComplex *) legendre_psi_dev, n1*n2,
+		     (const cuDoubleComplex *) legendre_dev, m,
+		     (const cuDoubleComplex *) &zero,
+		     (cuDoubleComplex *) psi_dev, n1*n2) == CUBLAS_STATUS_SUCCESS);
+}
+
+void EvolutionCUDA::legendre_transform_test()
+{
+  forward_legendre_transform();
+  backward_legendre_transform();
 }

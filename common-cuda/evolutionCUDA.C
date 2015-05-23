@@ -19,6 +19,7 @@ EvolutionCUDA::EvolutionCUDA(const MatlabArray<double> &m_pot_,
   // device memory
   pot_dev(0), psi_dev(0), work_dev(0), w_dev(0),
   exp_ipot_dt_dev(0),
+  legendre_dev(0), weight_legendre_dev(0), legendre_psi_dev(0),
   has_cublas_handle(0), has_cufft_plan(0)
 { 
   pot = m_pot.data;
@@ -53,4 +54,8 @@ void EvolutionCUDA::test()
   
   cout << " Module: " << module_for_psi() << endl;
   cout << " Potential energy: " << potential_energy() << endl;
+
+  legendre_transform_test();
+
+  gpu_memory_usage();
 }
