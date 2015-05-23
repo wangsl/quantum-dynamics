@@ -2,6 +2,9 @@
 #include "evolutionCUDA.h"
 #include "cumath.h"
 
+// #define IDX2F(i,j,ld) ((((j)-1)*(ld))+((i)-1)) 1-based
+// #define IDX2C(i,j,ld) (((j)*(ld))+(i)) 0-based
+
 __constant__ __device__ double dt;
 
 inline int number_of_blocks(const int n_threads, const int n)
@@ -342,17 +345,16 @@ void EvolutionCUDA::cuda_fft_test()
     cout << " " << k << " ";
     
     sdkResetTimer(&timer); sdkStartTimer(&timer);
-
-    forward_fft_for_psi();
-
-    backward_fft_for_psi();
     
-    const double s = 1.0/(n1*n2);
-    insist(cublasZdscal(cublas_handle, n1*n2*n_theta, &s, (cuDoubleComplex *) psi_dev, 1) 
-	   == CUBLAS_STATUS_SUCCESS);
+    cout << " Module: " << module_for_psi() << endl;
     
-    //forward_legendre_transform();
-    //backward_legendre_transform();
+    evolution_with_potential_dt();
+    
+    cout << " Potential energy: " << potential_energy() << endl;
+    cout << " Kinetic energy: " << kinetic_energy_for_psi() << endl;
+    
+    forward_legendre_transform();
+    backward_legendre_transform();
     
     sdkStopTimer(&timer); cout << "GPU time: " << sdkGetAverageTimerValue(&timer)*1e-3 << endl;
   }
@@ -455,8 +457,6 @@ double EvolutionCUDA::kinetic_energy_for_psi()
 
   sum *= r1.dr*r2.dr/n1/n2;
   
-  cout << " Kinetic energ: " << sum << endl;
-
   backward_fft_for_psi();
   
   const double s = 1.0/(n1*n2);

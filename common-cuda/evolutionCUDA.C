@@ -51,12 +51,12 @@ void EvolutionCUDA::test()
   evolution_with_potential_dt();
   cout << " Potential energy: " << potential_energy() << endl;
   
-  //cuda_fft_test();
+  cuda_fft_test();
   
   //cout << " Module: " << module_for_psi() << endl;
   //cout << " Potential energy: " << potential_energy() << endl;
 
-  kinetic_energy_for_psi();
+  //kinetic_energy_for_psi();
 
   cout << " Module: " << module_for_psi() << endl;
   evolution_with_potential_dt();
