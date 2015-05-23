@@ -49,7 +49,7 @@ private:
   const DumpFunction &dump2;
   CummulativeReactionProbabilities &CRP;
 
-  // Device data
+  // device data
   double *pot_dev;
   Complex *psi_dev;
   double *work_dev;
@@ -58,23 +58,32 @@ private:
   Complex *legendre_dev;
   Complex *weight_legendre_dev;
   Complex *legendre_psi_dev;
-
+  double *kinetic_1_dev;
+  double *kinetic_2_dev;
+  
   int has_cublas_handle;
-  int has_cufft_plan;
 
+  int has_cufft_plan_for_psi;
+  int has_cufft_plan_for_legendre_psi;
+  
 #ifdef __NVCC__
   cublasHandle_t cublas_handle;
-  cufftHandle cufft_plan;
+  cufftHandle cufft_plan_for_psi;
+  cufftHandle cufft_plan_for_legendre_psi;
 #endif
+
+  // device memory management 
+  void allocate_device_memories();
+  void deallocate_device_memories();
   
+  // cublas handle
   void setup_cublas_handle();
   void destroy_cublas_handle();
 
-  void setup_cufft_plan();
-  void destroy_cufft_plan();
-
+  // Legendre transform
   void setup_legendre();
   void setup_weight_legendre();
+  void setup_legendre_psi();
   void setup_legendre_transform()
   { 
     setup_legendre();
@@ -82,21 +91,31 @@ private:
     setup_legendre_psi();
   }
 
-  void setup_legendre_psi();
   void forward_legendre_transform();
   void backward_legendre_transform();
 
-  void legendre_transform_test();
-  
-  // device functions
-  void allocate_device_memories();
-  void deallocate_device_memories();
+  // FFT for psi
+  void setup_cufft_plan_for_psi();
+  void destroy_cufft_plan_for_psi();
 
+  void forward_fft_for_psi();
+  void backward_fft_for_psi();
+  
+  // FFT for Legendre psi
+  void setup_cufft_plan_for_legendre_psi();
+  void destroy_cufft_plan_for_legendre_psi();
+  
+  void forward_fft_for_legendre_psi();
+  void backward_fft_for_legendre_psi();
+  
+  // energy
   double module_for_psi() const;
   double potential_energy();
+  double kinetic_energy_for_psi();
   
+  // time evolution
   void evolution_with_potential_dt();
-
+  
   void cuda_fft_test();  
 };
 

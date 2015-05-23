@@ -20,7 +20,9 @@ EvolutionCUDA::EvolutionCUDA(const MatlabArray<double> &m_pot_,
   pot_dev(0), psi_dev(0), work_dev(0), w_dev(0),
   exp_ipot_dt_dev(0),
   legendre_dev(0), weight_legendre_dev(0), legendre_psi_dev(0),
-  has_cublas_handle(0), has_cufft_plan(0)
+  kinetic_1_dev(0), kinetic_2_dev(0),
+  has_cublas_handle(0),
+  has_cufft_plan_for_psi(0), has_cufft_plan_for_legendre_psi(0)
 { 
   pot = m_pot.data;
   insist(pot);
@@ -34,11 +36,10 @@ EvolutionCUDA::EvolutionCUDA(const MatlabArray<double> &m_pot_,
 EvolutionCUDA::~EvolutionCUDA()
 {
   cout << " EvolutionCUDA Destructor" << endl;
-
+  
   pot = 0;
   psi = 0;
 
-  // device memory
   deallocate_device_memories();
 }
 
@@ -49,13 +50,17 @@ void EvolutionCUDA::test()
   cout << " Module: " << module_for_psi() << endl;
   evolution_with_potential_dt();
   cout << " Potential energy: " << potential_energy() << endl;
-
-  cuda_fft_test();
   
+  //cuda_fft_test();
+  
+  //cout << " Module: " << module_for_psi() << endl;
+  //cout << " Potential energy: " << potential_energy() << endl;
+
+  kinetic_energy_for_psi();
+
   cout << " Module: " << module_for_psi() << endl;
+  evolution_with_potential_dt();
   cout << " Potential energy: " << potential_energy() << endl;
-
-  legendre_transform_test();
-
+  
   gpu_memory_usage();
 }
