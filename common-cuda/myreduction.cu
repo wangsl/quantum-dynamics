@@ -37,7 +37,7 @@ template<> struct SharedMemory<double>
   }
 };
 
-bool isPow2(unsigned int x) { return is_pow_2(x); }
+bool isPow2(unsigned int x) { return cumath::is_pow_2(x); }
 
 /*
     This version adds multiple elements per thread sequentially.  This reduces the overall

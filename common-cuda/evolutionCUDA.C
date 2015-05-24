@@ -45,22 +45,9 @@ EvolutionCUDA::~EvolutionCUDA()
 
 void EvolutionCUDA::test()
 {
-  cout << " EvolutionCUDA test" << endl;
-  
-  cout << " Module: " << module_for_psi() << endl;
-  evolution_with_potential_dt();
-  cout << " Potential energy: " << potential_energy() << endl;
-  
+  //cout << " EvolutionCUDA test" << endl;
+
   cuda_fft_test();
-  
-  //cout << " Module: " << module_for_psi() << endl;
-  //cout << " Potential energy: " << potential_energy() << endl;
 
-  //kinetic_energy_for_psi();
-
-  cout << " Module: " << module_for_psi() << endl;
-  evolution_with_potential_dt();
-  cout << " Potential energy: " << potential_energy() << endl;
-  
   gpu_memory_usage();
 }

@@ -2,6 +2,8 @@
 #include "timeEvolCUDA.h"
 #include "cumath.h"
 
+using namespace cumath;
+
 #if 0
 __constant__ __device__ double dt;
 
