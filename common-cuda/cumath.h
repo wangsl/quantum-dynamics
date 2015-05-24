@@ -8,7 +8,7 @@
 #include <cufft.h>
 #include <helper_functions.h>
 #include <helper_cuda.h>
-#include <sm_30_intrinsics.hpp>
+//#include <sm_30_intrinsics.hpp>
 
 #include "complex.h"
 

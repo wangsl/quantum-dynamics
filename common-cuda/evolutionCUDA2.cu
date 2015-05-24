@@ -5,7 +5,7 @@
 // #define IDX2F(i,j,ld) ((((j)-1)*(ld))+((i)-1)) 1-based
 // #define IDX2C(i,j,ld) (((j)*(ld))+(i)) 0-based
 
-__constant__ __device__ double dt;
+__constant__ double dt;
 
 inline int number_of_blocks(const int n_threads, const int n)
 { return n/n_threads*n_threads == n ? n/n_threads : n/n_threads+1; }
@@ -271,7 +271,7 @@ double EvolutionCUDA::potential_energy()
   insist(work_dev);
   cuDoubleComplex *psi_tmp_dev = (cuDoubleComplex *) work_dev;
   
-  const int n_threads = 256;
+  const int n_threads = 1024;
   const int n_blocks = number_of_blocks(n_threads, n1*n2);
   
   double sum = 0.0;
@@ -329,9 +329,9 @@ void EvolutionCUDA::setup_legendre_psi()
 
 void EvolutionCUDA::cuda_fft_test()
 { 
-  const int &n1 = r1.n;
-  const int &n2 = r2.n;
-  const int &n_theta = theta.n;
+  //const int &n1 = r1.n;
+  //const int &n2 = r2.n;
+  //const int &n_theta = theta.n;
   
   insist(psi_dev);
   
@@ -342,7 +342,7 @@ void EvolutionCUDA::cuda_fft_test()
   
   for(int k = 0; k < total_steps; k++) {
     
-    cout << " " << k << " ";
+    cout << "\n " << k << " ";
     
     sdkResetTimer(&timer); sdkStartTimer(&timer);
     
@@ -356,7 +356,7 @@ void EvolutionCUDA::cuda_fft_test()
     forward_legendre_transform();
     backward_legendre_transform();
     
-    sdkStopTimer(&timer); cout << "GPU time: " << sdkGetAverageTimerValue(&timer)*1e-3 << endl;
+    sdkStopTimer(&timer); cout << " GPU time: " << sdkGetAverageTimerValue(&timer)*1e-3 << endl;
   }
 }
 
@@ -409,7 +409,7 @@ void EvolutionCUDA::forward_fft_for_psi()
   insist(cufftExecZ2Z(cufft_plan_for_psi, (cuDoubleComplex *) psi_dev, (cuDoubleComplex *) psi_dev, 
 		      CUFFT_FORWARD) == CUFFT_SUCCESS);
 
-  insist(cudaDeviceSynchronize() == CUFFT_SUCCESS);
+  checkCudaErrors(cudaDeviceSynchronize());
 }
 
 void EvolutionCUDA::backward_fft_for_psi()
@@ -419,7 +419,7 @@ void EvolutionCUDA::backward_fft_for_psi()
   insist(cufftExecZ2Z(cufft_plan_for_psi, (cuDoubleComplex *) psi_dev, (cuDoubleComplex *) psi_dev, 
 		      CUFFT_INVERSE) == CUFFT_SUCCESS);
   
-  insist(cudaDeviceSynchronize() == CUFFT_SUCCESS);
+  checkCudaErrors(cudaDeviceSynchronize());
 }
 
 double EvolutionCUDA::kinetic_energy_for_psi()
@@ -435,7 +435,7 @@ double EvolutionCUDA::kinetic_energy_for_psi()
   insist(work_dev);
   cuDoubleComplex *psi_tmp_dev = (cuDoubleComplex *) work_dev;
   
-  const int n_threads = 256;
+  const int n_threads = 1024;
   const int n_blocks = number_of_blocks(n_threads, n1*n2);
   
   double sum = 0.0;

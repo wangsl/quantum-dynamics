@@ -55,15 +55,27 @@ function special_rules()
 {
     return
 
+    local is_link=1
     local arg=
     for arg in $*; do
-	if [ "$arg" == "--device-link" ]; then
-	    export EXTRA_LINK_FLAGS=""
-	    export LDFLAGS=""
-	    return
+	if [ "$arg" == "-dc" ]; then
+	    is_link=0
 	fi
     done
+
+    if [ $is_link -eq 1 ]; then
+	module switch cuda/6.5.12 cuda/7.0.28
+	module list
+	export CPPFLAGS=$(for inc in $(env | grep _INC= | cut -d= -f2); do echo '-I'$inc; done | xargs)
+	export LDFLAGS=$(for lib in $(env | grep _LIB= | cut -d= -f2); do echo '-L'$lib; done | xargs)
+	prepend_to_env_variable INCLUDE_FLAGS "$CPPFLAGS"
+	prepend_to_env_variable LINK_FLAGS "$LDFLAGS"
+	export EXTRA_LINK_FLAGS="$(LD_LIBRARY_PATH_to_rpath)"
+    fi
 }
+
+# to work with Matlab R2015a GUI, we'll have to use CUDA toolkit 6.5, not 7.0.28
+# no GUI version works with CUDA toolkit 7.0.28
 
 function main() 
 {
@@ -72,7 +84,8 @@ function main()
     module load intel/14.0.2
     module load fftw/intel/3.3.4
     module load matlab/2015a
-    module load cuda/7.0.28
+    #module load cuda/7.0.28
+    module load cuda/6.5.12
     
     local util=$HOME/bin/intel/util.sh
     if [ -e $util ]; then

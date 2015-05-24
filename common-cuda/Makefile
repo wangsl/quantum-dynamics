@@ -17,24 +17,24 @@ CFLAGS =
 
 FFLAGS = -132
 
-NVCCINCLUDE = -I/home/wang/matlab/quantum-dynamics/common-cuda -I$(CUDA_ROOT)/samples/common/inc -I$(MATLAB_ROOT)/extern/include
+NVCCINCLUDE = -I/home/wang/matlab/quantum-dynamics/common-cuda \
+	-I$(CUDA_ROOT)/samples/common/inc \
+	-I$(MATLAB_ROOT)/extern/include
 
 CUDAArchs= -gencode arch=compute_20,code=sm_20 \
         -gencode arch=compute_30,code=sm_30 \
         -gencode arch=compute_35,code=sm_35 \
         -gencode arch=compute_37,code=sm_37 \
         -gencode arch=compute_50,code=sm_50 \
-        -gencode arch=compute_52,code=sm_52 \
-        -gencode arch=compute_52,code=compute_52 \
 	-Xcompiler=\"-fPIC -pthread -fexceptions -m64\"
 
 NVCCFLAGS = $(NVCCINCLUDE) $(CUDAArchs) -use_fast_math -O3 
 
-CXXFLAGS = -std=c++0x -I$(NVCCINCLUDE)
+CXXFLAGS = -std=c++0x $(NVCCINCLUDE)
 
 Link = $(CXX)
 
-LIBS = -lfftw3_omp -lifcoremt -L$(CUDA_LIB) -lcufft -lcublas -lcudart 
+LIBS = -lfftw3_omp -lifcoremt -L$(CUDA_LIB) -lcufft -lcublas -lcudart
 
 MEXA64Files = \
 	$(O)/TimeEvolutionMexCUDA.mexa64 \
@@ -88,6 +88,9 @@ $(O)/%.mexa64: $(O)/%.o $(QMLibs)
 
 clean:
 	rm -f $(O)/* *.o *~ *.mod $(EXE) depend $(MEXA64Files) $(QMLibs) $(OBJS)
+
+cleancuda:
+	rm -rf $(CUDAObjs)
 
 depend :
 	$(CXX) $(CXXFLAGS) -MM *.[cC] | perl dep.pl > $@

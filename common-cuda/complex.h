@@ -145,12 +145,14 @@ class Complex
   friend ostream & operator <<(ostream &s, const Complex &c)
   { return s << "(" << c.re << ", " << c.im << ")"; }
   
+#if 0
   __DEVICE_HOST__ char *to_string() const 
   { 
     char tmp[32]; 
     sprintf(tmp, "(%.8f, %.8f)", re, im); 
     return tmp;
   }
+#endif
 };
 
 #endif /* COMPLEX_H */  
