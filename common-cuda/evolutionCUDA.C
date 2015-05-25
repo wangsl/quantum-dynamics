@@ -18,11 +18,8 @@ EvolutionCUDA::EvolutionCUDA(const MatlabArray<double> &m_pot_,
   CRP(CRP_),
   // device memory
   pot_dev(0), psi_dev(0), work_dev(0), w_dev(0),
-  exp_ipot_dt_dev(0),
   legendre_dev(0), weight_legendre_dev(0), legendre_psi_dev(0),
-  kinetic_1_dev(0), kinetic_2_dev(0),
-  has_cublas_handle(0),
-  has_cufft_plan_for_psi(0), has_cufft_plan_for_legendre_psi(0)
+  has_cublas_handle(0), has_cufft_plan_for_psi(0), has_cufft_plan_for_legendre_psi(0)
 { 
   pot = m_pot.data;
   insist(pot);
@@ -45,9 +42,6 @@ EvolutionCUDA::~EvolutionCUDA()
 
 void EvolutionCUDA::test()
 {
-  //cout << " EvolutionCUDA test" << endl;
-
   cuda_fft_test();
-
   gpu_memory_usage();
 }

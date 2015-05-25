@@ -54,12 +54,9 @@ private:
   Complex *psi_dev;
   double *work_dev;
   double *w_dev;
-  Complex *exp_ipot_dt_dev;
   Complex *legendre_dev;
   Complex *weight_legendre_dev;
   Complex *legendre_psi_dev;
-  double *kinetic_1_dev;
-  double *kinetic_2_dev;
   
   int has_cublas_handle;
 
@@ -99,19 +96,22 @@ private:
   void destroy_cufft_plan_for_psi();
 
   void forward_fft_for_psi();
-  void backward_fft_for_psi();
+  void backward_fft_for_psi(const int do_scale = 0);
   
   // FFT for Legendre psi
   void setup_cufft_plan_for_legendre_psi();
   void destroy_cufft_plan_for_legendre_psi();
   
   void forward_fft_for_legendre_psi();
-  void backward_fft_for_legendre_psi();
+  void backward_fft_for_legendre_psi(const int do_scale = 0);
   
   // energy
   double module_for_psi() const;
+  double module_for_legendre_psi();
   double potential_energy();
-  double kinetic_energy_for_psi();
+  double kinetic_energy_for_psi(const int do_fft = 1);
+  double kinetic_energy_for_legendre_psi(const int do_fft = 1);
+  double rotational_energy(const int do_legendre_transform = 1);
   
   // time evolution
   void evolution_with_potential_dt();

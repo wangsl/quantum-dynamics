@@ -115,6 +115,15 @@ namespace cumath {
       }
     }
   }
+
+  __device__ inline void setup_moments_of_inertia(double *I, const int n, const double r_left, 
+						  const double dr, const double mass)
+  {
+    for(int i = threadIdx.x; i < n; i += blockDim.x) {
+      const double r = r_left + i*dr;
+      I[i] = 1.0/(2*mass*r*r);
+    }
+  }
 }
 
 #endif

@@ -8,6 +8,7 @@
 struct RadialCoordinates
 { 
   double dr;
+  double r_left;
   double mass;
   int n;
 };
@@ -19,21 +20,16 @@ __constant__ RadialCoordinates r2_dev;
 inline int number_of_blocks(const int n_threads, const int n)
 { return n/n_threads*n_threads == n ? n/n_threads : n/n_threads+1; }
 
-inline void copy_radial_coordinates_to_device(const RadialCoordinates &r, const int &n, 
-					      const double &dr, const double &mass)	    
+inline void copy_radial_coordinates_to_device(const RadialCoordinates &r, const int n, 
+					      const double dr, const double r_left, const double mass)	    
 {									
   RadialCoordinates r_h;
   r_h.dr = dr;
+  r_h.r_left = r_left;
   r_h.mass = mass;
   r_h.n = n;
   checkCudaErrors(cudaMemcpyToSymbol(r, &r_h, sizeof(RadialCoordinates))); 
 }
-
-static __global__ void setup_momentum_for_fft(double *p, const int n, const double xl)
-{ cumath::setup_momentum_for_fft(p, n, xl); }
-
-static __device__ void setup_kinetic_energy_for_fft(double *kin, const int n, const double xl, const double mass)
-{ cumath::setup_kinetic_energy_for_fft(kin, n, xl, mass); }
 
 static __global__ void _evolution_with_potential_dt_(Complex *psi, const double *pot, int n)
 {
@@ -42,16 +38,15 @@ static __global__ void _evolution_with_potential_dt_(Complex *psi, const double 
 }
 
 static __global__ void _psi_times_kinitic_energy_(Complex *psiOut, const Complex *psiIn, 
-						  const double *kin1, const int n1,
-						  const double *kin2, const int n2)
+						  const int n1, const int n2)
 {
   extern __shared__ double kin_share[];
 
   double *sKin1 = (double *) kin_share;
   double *sKin2 = (double *) &sKin1[n1];
   
-  setup_kinetic_energy_for_fft(sKin1, r1_dev.n, (r1_dev.n*r1_dev.dr), r1_dev.mass);
-  setup_kinetic_energy_for_fft(sKin2, r2_dev.n, (r2_dev.n*r2_dev.dr), r2_dev.mass);
+  cumath::setup_kinetic_energy_for_fft(sKin1, r1_dev.n, r1_dev.n*r1_dev.dr, r1_dev.mass);
+  cumath::setup_kinetic_energy_for_fft(sKin2, r2_dev.n, r2_dev.n*r2_dev.dr, r2_dev.mass);
   
   __syncthreads();
   
@@ -60,6 +55,27 @@ static __global__ void _psi_times_kinitic_energy_(Complex *psiOut, const Complex
     int j = index/n1;
     int i = index - j*n1;
     psiOut[index] = psiIn[index]*(sKin1[i] + sKin2[j]);
+  }
+}
+
+static __global__ void _legendre_psi_times_moments_of_inertia_(Complex *psiOut, const Complex *psiIn, 
+							      const int n1, const int n2)
+{
+  extern __shared__ double kin_share[];
+
+  double *I1 = (double *) kin_share;
+  double *I2 = (double *) &I1[n1];
+
+  cumath::setup_moments_of_inertia(I1, r1_dev.n, r1_dev.r_left, r1_dev.dr, r1_dev.mass);
+  cumath::setup_moments_of_inertia(I2, r2_dev.n, r2_dev.r_left, r2_dev.dr, r2_dev.mass);
+  
+  __syncthreads();
+  
+  const int index = threadIdx.x + blockDim.x*blockIdx.x;
+  if(index < n1*n2) {
+    int j = index/n1;
+    int i = index - j*n1;
+    psiOut[index] = psiIn[index]*(I1[i] + I2[j]);
   }
 }
 
@@ -112,19 +128,9 @@ void EvolutionCUDA::allocate_device_memories()
     insist(w);
     checkCudaErrors(cudaMemcpy(w_dev, w, n_theta*sizeof(double), cudaMemcpyHostToDevice));
   }
-
-  if(!kinetic_1_dev) {
-    checkCudaErrors(cudaMalloc(&kinetic_1_dev, n1*sizeof(double)));
-    checkCudaErrors(cudaMemcpy(kinetic_1_dev, r1.psq2m,  n1*sizeof(double), cudaMemcpyHostToDevice));
-  }
   
-  if(!kinetic_2_dev) {
-    checkCudaErrors(cudaMalloc(&kinetic_2_dev, n2*sizeof(double)));
-    checkCudaErrors(cudaMemcpy(kinetic_2_dev, r2.psq2m,  n2*sizeof(double), cudaMemcpyHostToDevice));
-  }
-  
-  copy_radial_coordinates_to_device(r1_dev, r1.n, r1.dr, r1.mass);
-  copy_radial_coordinates_to_device(r2_dev, r2.n, r2.dr, r2.mass);
+  copy_radial_coordinates_to_device(r1_dev, r1.n, r1.dr, r1.r[0], r1.mass);
+  copy_radial_coordinates_to_device(r2_dev, r2.n, r2.dr, r2.r[0], r2.mass);
 
   setup_cublas_handle();
 }
@@ -139,12 +145,9 @@ void EvolutionCUDA::deallocate_device_memories()
   _CUDA_FREE_(psi_dev);
   _CUDA_FREE_(work_dev);
   _CUDA_FREE_(w_dev);
-  _CUDA_FREE_(exp_ipot_dt_dev);
   _CUDA_FREE_(legendre_dev);
   _CUDA_FREE_(weight_legendre_dev);
   _CUDA_FREE_(legendre_psi_dev);
-  _CUDA_FREE_(kinetic_1_dev);
-  _CUDA_FREE_(kinetic_2_dev);
   
 #undef _CUDA_FREE_
 
@@ -197,7 +200,7 @@ void EvolutionCUDA::setup_cufft_plan_for_legendre_psi()
   const int &n1 = r1.n;
   const int &n2 = r2.n;
   const int m = theta.m + 1;
-  
+
   int dim[] = { n1, n2 };
   
   insist(cufftPlanMany(&cufft_plan_for_legendre_psi, 2, dim, NULL, 1, n1*n2, NULL, 1, n1*n2,
@@ -357,19 +360,27 @@ void EvolutionCUDA::cuda_fft_test()
   
   for(int k = 0; k < total_steps; k++) {
     
-    cout << "\n " << k << " ";
+    cout << "\n Step: " << k << endl;
     
     sdkResetTimer(&timer); sdkStartTimer(&timer);
-    
-    cout << " Module: " << module_for_psi() << endl;
-    
-    evolution_with_potential_dt();
-    
-    cout << " Potential energy: " << potential_energy() << endl;
-    cout << " Kinetic energy for psi: " << kinetic_energy_for_psi() << endl;
+
+    const double module = module_for_psi();
+    const double e_pot = potential_energy();
     
     forward_legendre_transform();
+    const double e_rot = rotational_energy(0);
+    
+    forward_fft_for_legendre_psi();
+    const double e_kin = kinetic_energy_for_legendre_psi(0);
+    
+    backward_fft_for_legendre_psi(1);
     backward_legendre_transform();
+    
+    cout << " e_kin: " << e_kin << "\n"
+	 << " e_rot: " << e_rot << "\n"
+	 << " e_pot: " << e_pot << "\n"
+	 << " e_tot: " << e_kin + e_rot + e_pot << "\n"
+	 << " module: " << module << endl;
     
     sdkStopTimer(&timer); cout << " GPU time: " << sdkGetAverageTimerValue(&timer)*1e-3 << endl;
   }
@@ -429,7 +440,7 @@ void EvolutionCUDA::forward_fft_for_psi()
   checkCudaErrors(cudaDeviceSynchronize());
 }
 
-void EvolutionCUDA::backward_fft_for_psi()
+void EvolutionCUDA::backward_fft_for_psi(const int do_scale)
 {
   setup_cufft_plan_for_psi();
  
@@ -437,22 +448,33 @@ void EvolutionCUDA::backward_fft_for_psi()
 		      CUFFT_INVERSE) == CUFFT_SUCCESS);
   
   checkCudaErrors(cudaDeviceSynchronize());
+
+  if(do_scale) {
+    const int &n1 = r1.n;
+    const int &n2 = r2.n;
+    const int &n_theta = theta.n;
+    const double s = 1.0/(n1*n2);
+    insist(cublasZdscal(cublas_handle, n1*n2*n_theta, &s, (cuDoubleComplex *) psi_dev, 1) 
+	   == CUBLAS_STATUS_SUCCESS);
+    
+  }
 }
 
-double EvolutionCUDA::kinetic_energy_for_psi()
+double EvolutionCUDA::kinetic_energy_for_psi(const int do_fft)
 {
   const int &n1 = r1.n;
   const int &n2 = r2.n;
   const int &n_theta = theta.n;
-
-  forward_fft_for_psi();
+  
+  if(do_fft)
+    forward_fft_for_psi();
 
   const double *w = theta.w;
   
   insist(work_dev);
   cuDoubleComplex *psi_tmp_dev = (cuDoubleComplex *) work_dev;
   
-  const int n_threads = 512;
+  const int n_threads = 1024;
   const int n_blocks = number_of_blocks(n_threads, n1*n2);
   
   double sum = 0.0;
@@ -460,8 +482,7 @@ double EvolutionCUDA::kinetic_energy_for_psi()
     const cuDoubleComplex *psi_in_dev = (cuDoubleComplex *) psi_dev + k*n1*n2;
 
     _psi_times_kinitic_energy_<<<n_blocks, n_threads, (n1+n2)*sizeof(double)>>>
-    ((Complex *) psi_tmp_dev, (const Complex *) psi_in_dev, 
-       kinetic_1_dev, n1, kinetic_2_dev, n2);
+      ((Complex *) psi_tmp_dev, (const Complex *) psi_in_dev, n1, n2);
     
     checkCudaErrors(cudaDeviceSynchronize());
     
@@ -471,14 +492,160 @@ double EvolutionCUDA::kinetic_energy_for_psi()
     
     sum += w[k]*dot.real();
   }
-
+  
   sum *= r1.dr*r2.dr/n1/n2;
   
-  backward_fft_for_psi();
+  if(do_fft) {
+    backward_fft_for_psi();
+    
+    const double s = 1.0/(n1*n2);
+    insist(cublasZdscal(cublas_handle, n1*n2*n_theta, &s, (cuDoubleComplex *) psi_dev, 1) 
+	   == CUBLAS_STATUS_SUCCESS);
+  }
+
+  return sum;
+}
+
+void EvolutionCUDA::forward_fft_for_legendre_psi()
+{ 
+  setup_cufft_plan_for_legendre_psi();
   
-  const double s = 1.0/(n1*n2);
-  insist(cublasZdscal(cublas_handle, n1*n2*n_theta, &s, (cuDoubleComplex *) psi_dev, 1) 
-	 == CUBLAS_STATUS_SUCCESS);
+  insist(cufftExecZ2Z(cufft_plan_for_legendre_psi, 
+		      (cuDoubleComplex *) legendre_psi_dev, (cuDoubleComplex *) legendre_psi_dev, 
+		      CUFFT_FORWARD) == CUFFT_SUCCESS);
+
+  checkCudaErrors(cudaDeviceSynchronize());
+}
+
+void EvolutionCUDA::backward_fft_for_legendre_psi(const int do_scale)
+{
+  setup_cufft_plan_for_legendre_psi();
+ 
+  insist(cufftExecZ2Z(cufft_plan_for_legendre_psi, 
+		      (cuDoubleComplex *) legendre_psi_dev, (cuDoubleComplex *) legendre_psi_dev, 
+		      CUFFT_INVERSE) == CUFFT_SUCCESS);
+  
+  checkCudaErrors(cudaDeviceSynchronize());
+  
+  if(do_scale) {
+    const int &n1 = r1.n;
+    const int &n2 = r2.n;
+    const int m = theta.m + 1;
+
+    const double s = 1.0/(n1*n2);
+    insist(cublasZdscal(cublas_handle, n1*n2*m, &s, (cuDoubleComplex *) legendre_psi_dev, 1) 
+	   == CUBLAS_STATUS_SUCCESS);
+  }
+}
+
+double EvolutionCUDA::kinetic_energy_for_legendre_psi(const int do_fft)
+{
+  const int &n1 = r1.n;
+  const int &n2 = r2.n;
+  const int m = theta.m + 1;
+  
+  if(do_fft)
+    forward_fft_for_legendre_psi();
+
+  insist(work_dev);
+  cuDoubleComplex *psi_tmp_dev = (cuDoubleComplex *) work_dev;
+  
+  const int n_threads = 1024;
+  const int n_blocks = number_of_blocks(n_threads, n1*n2);
+  
+  double sum = 0.0;
+  for(int l = 0; l < m; l++) {
+    const cuDoubleComplex *legendre_psi_in_dev = (cuDoubleComplex *) legendre_psi_dev + l*n1*n2;
+    
+    _psi_times_kinitic_energy_<<<n_blocks, n_threads, (n1+n2)*sizeof(double)>>>
+      ((Complex *) psi_tmp_dev, (const Complex *) legendre_psi_in_dev, n1, n2);
+    
+    checkCudaErrors(cudaDeviceSynchronize());
+    
+    Complex dot(0.0, 0.0);
+    insist(cublasZdotc(cublas_handle, n1*n2, legendre_psi_in_dev, 1, psi_tmp_dev, 1, (cuDoubleComplex *) &dot)
+	   == CUBLAS_STATUS_SUCCESS);
+    
+    sum += 2.0/(2*l+1)*dot.real();
+  }
+
+  sum *= r1.dr*r2.dr/n1/n2;
+
+  if(do_fft) {
+    backward_fft_for_legendre_psi();
+    
+    const double s = 1.0/(n1*n2);
+    insist(cublasZdscal(cublas_handle, n1*n2*m, &s, (cuDoubleComplex *) legendre_psi_dev, 1) 
+	   == CUBLAS_STATUS_SUCCESS);
+  }
+
+  return sum;
+}
+
+double EvolutionCUDA::rotational_energy(const int do_legendre_transform)
+{
+  const int &n1 = r1.n;
+  const int &n2 = r2.n;
+  const int m = theta.m + 1;
+  
+  if(do_legendre_transform) 
+    forward_legendre_transform();
+  
+  insist(work_dev);
+  cuDoubleComplex *psi_tmp_dev = (cuDoubleComplex *) work_dev;
+
+  const int n_threads = 1024;
+  const int n_blocks = number_of_blocks(n_threads, n1*n2);
+  
+  double sum = 0.0;
+  for(int l = 0; l < m; l++) {
+    const cuDoubleComplex *legendre_psi_in_dev = (cuDoubleComplex *) legendre_psi_dev + l*n1*n2;
+    
+    _legendre_psi_times_moments_of_inertia_<<<n_blocks, n_threads, (n1+n2)*sizeof(double)>>>
+      ((Complex *) psi_tmp_dev, (const Complex *) legendre_psi_in_dev, n1, n2);
+    
+    checkCudaErrors(cudaDeviceSynchronize());
+    
+    Complex dot(0.0, 0.0);
+    insist(cublasZdotc(cublas_handle, n1*n2, legendre_psi_in_dev, 1, psi_tmp_dev, 1, (cuDoubleComplex *) &dot)
+	   == CUBLAS_STATUS_SUCCESS);
+    
+    sum += l*(l+1)/(l+0.5)*dot.real();
+  }
+
+  sum *= r1.dr*r2.dr;
+
+  if(do_legendre_transform)
+    backward_legendre_transform();
+
+  return sum;
+}
+
+double EvolutionCUDA::module_for_legendre_psi()
+{
+  const int &n1 = r1.n;
+  const int &n2 = r2.n;
+  const int m = theta.m + 1;
+  
+  forward_legendre_transform();
+
+  const int n_threads = 1024;
+  const int n_blocks = number_of_blocks(n_threads, n1*n2);
+  
+  double sum = 0.0;
+  for(int l = 0; l < m; l++) {
+    const cuDoubleComplex *legendre_psi_in_dev = (cuDoubleComplex *) legendre_psi_dev + l*n1*n2;
+    
+    Complex dot(0.0, 0.0);
+    insist(cublasZdotc(cublas_handle, n1*n2, legendre_psi_in_dev, 1, legendre_psi_in_dev,
+		       1, (cuDoubleComplex *) &dot) == CUBLAS_STATUS_SUCCESS);
+    
+    sum += 2.0/(2*l+1)*dot.real();
+  }
+
+  sum *= r1.dr*r2.dr;
+
+  backward_legendre_transform();
 
   return sum;
 }
