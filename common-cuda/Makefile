@@ -26,9 +26,11 @@ CUDAArchs= -gencode arch=compute_20,code=sm_20 \
         -gencode arch=compute_35,code=sm_35 \
         -gencode arch=compute_37,code=sm_37 \
         -gencode arch=compute_50,code=sm_50 \
+	-gencode arch=compute_52,code=sm_52 \
+        -gencode arch=compute_52,code=compute_52 \
 	-Xcompiler=\"-fPIC -pthread -fexceptions -m64\"
 
-NVCCFLAGS = $(NVCCINCLUDE) $(CUDAArchs) -use_fast_math -O3 
+NVCCFLAGS = $(NVCCINCLUDE) $(CUDAArchs) -O3  -prec-div=true -prec-sqrt=true 
 
 CXXFLAGS = -std=c++0x $(NVCCINCLUDE)
 
@@ -49,7 +51,7 @@ CUDALinkObj = $(O)/cudalink.o
 OBJS = $(O)/GaussLegendreMex.o $(O)/GaussLegendre.o $(O)/sortcpp.o \
 	$(O)/fftwinterface.o $(O)/timeEvolCUDA.o  $(O)/LegTransform.o \
 	$(O)/zeros.o $(O)/CRPAux.o $(O)/wave2matlab.o \
-	$(O)/Gradient3.o $(O)/matutils.o \
+	$(O)/Gradient3.o $(O)/matutils.o  $(O)/indent.o \
 	$(O)/MatlabStructures.o $(O)/MatlabStructuresio.o $(O)/out.o \
 	$(O)/evolutionCUDA.o \
 	$(CUDAObjs) $(CUDALinkObj)

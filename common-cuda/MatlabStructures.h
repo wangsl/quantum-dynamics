@@ -97,6 +97,7 @@ public:
 
   char *wave_to_matlab; // out
   char *test_name; // out
+  const int &steps_to_copy_psi_from_device_to_host; // out
 
   Options(const mxArray *mx);
   ~Options();

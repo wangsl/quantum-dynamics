@@ -1,5 +1,5 @@
 
-/* created at: 2015-03-24 21:22:04 */
+/* created at: 2015-05-28 22:55:12 */
 
 #include <iostream>
 using namespace std;
@@ -72,6 +72,7 @@ void Options::write_fields(ostream &s) const
     s << Indent() << "wave_to_matlab " << wave_to_matlab << "\n";
   if (test_name)
     s << Indent() << "test_name " << test_name << "\n";
+  s << Indent() << "steps_to_copy_psi_from_device_to_host " << steps_to_copy_psi_from_device_to_host << "\n";
 }
 
 ostream & operator <<(ostream &s, const CummulativeReactionProbabilities &c)

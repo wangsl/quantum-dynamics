@@ -46,8 +46,6 @@ inline char *mxGetString(const mxArray *mx, const char *field)
 
 #else /* For Fortran */
 
-
-
 #endif
 
 #endif /* MATUTILS_H */

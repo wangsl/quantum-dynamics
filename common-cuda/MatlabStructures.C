@@ -25,7 +25,7 @@ RadialCoordinate::RadialCoordinate(const mxArray *mx) :
   psq2m.resize(n);
   FFTWInterface::get_momentum_for_fftw(psq2m, n*dr);
   for(int i = 0; i < n; i++) {
-    psq2m[i] =  psq2m[i]*psq2m[i]/(2*mass);
+    psq2m[i] = psq2m[i]*psq2m[i]/(2*mass);
   }
 
   one2mr2.resize(n);
@@ -59,7 +59,8 @@ EvolutionTime::EvolutionTime(const mxArray *mx) :
 Options::Options(const mxArray *mx) :
   mx(mx),
   wave_to_matlab(0),
-  test_name(0)
+  test_name(0),
+  steps_to_copy_psi_from_device_to_host (*(int *) mxGetData(mx, "steps_to_copy_psi_from_device_to_host"))
 {
   wave_to_matlab = mxGetString(mx, "wave_to_matlab");
   if(wave_to_matlab)

@@ -21,7 +21,18 @@ namespace cumath {
 
   inline bool is_pow_2(int x) { return ((x&(x-1)) == 0); }
 
-  __device__ __host__ inline double sq(const double &x) { return x*x; }
+  __device__ __host__ inline double sq(const double x) { return x*x; }
+
+  __device__ __host__ inline void index_2_ij(const int index, const int n1, const int n2, int &i, int &j)
+  {  j = index/n1; i = index - j*n1; }
+  
+  __device__ __host__ inline void index_2_ijk(const int index, const int n1, const int n2, const int n3, 
+					      int &i, int &j, int &k)
+  {
+    int ij = -1;
+    index_2_ij(index, n1*n2, n3, ij, k);
+    index_2_ij(ij, n1, n2, i, j);
+  }
   
   __device__ inline double atomicAdd(double *address, double val)
   {
@@ -112,6 +123,23 @@ namespace cumath {
 	kin[i] = sq(two_pi_xl*i)/(mass+mass);
       } else if(i > n/2) {
 	kin[i] = sq(two_pi_xl*(-n+i))/(mass+mass);
+      }
+    }
+  }
+
+  __device__ inline void setup_exp_i_kinetic_dt(Complex *kin, const int n, const double xl, const double mass, const double dt)
+  {
+    if(n/2*2 != n) return;
+    
+    const double two_pi_xl = 2*Pi/xl;
+    
+    for(int i = threadIdx.x; i < n; i += blockDim.x) {
+      if(i <= n/2) {
+	const double k = sq(two_pi_xl*i)/(mass+mass);
+	kin[i] = exp(Complex(0.0, -dt)*k);
+      } else if(i > n/2) {
+	const double k = sq(two_pi_xl*(-n+i))/(mass+mass);
+	kin[i] = exp(Complex(0.0, -dt)*k);
       }
     }
   }

@@ -9,6 +9,7 @@ using namespace std;
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
+#include <cufft.h>
 
 #ifdef __NVCC__
 #define __DEVICE_HOST__ __device__ __host__
@@ -32,7 +33,7 @@ class Complex
   
   __DEVICE_HOST__ operator double *() { return (double *) this; }
   __DEVICE_HOST__ operator const double *() const { return (const double *) this; }
-  
+
   __DEVICE_HOST__ double real() const { return re; }
   __DEVICE_HOST__ double imag() const { return im; }
   

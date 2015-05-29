@@ -84,8 +84,8 @@ function main()
     module load intel/14.0.2
     module load fftw/intel/3.3.4
     module load matlab/2015a
-    #module load cuda/7.0.28
-    module load cuda/6.5.12
+    module load cuda/7.0.28
+    #module load cuda/6.5.12
     
     local util=$HOME/bin/intel/util.sh
     if [ -e $util ]; then

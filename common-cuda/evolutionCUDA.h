@@ -57,6 +57,8 @@ private:
   Complex *legendre_dev;
   Complex *weight_legendre_dev;
   Complex *legendre_psi_dev;
+  double *dump1_dev;
+  double *dump2_dev;
   
   int has_cublas_handle;
 
@@ -114,7 +116,14 @@ private:
   double rotational_energy(const int do_legendre_transform = 1);
   
   // time evolution
-  void evolution_with_potential_dt();
+  void evolution_with_potential(const double dt);
+  void evolution_with_rotational(const double dt);
+  void evolution_with_kinetic(const double dt);
+  void time_evolution();
+  void copy_psi_from_device_to_host();
+
+  // dump functions
+  int apply_dump() const { return (dump1.dump && dump2.dump) ? 1 : 0; }
   
   void cuda_fft_test();  
 };
