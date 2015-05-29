@@ -10,8 +10,8 @@ function [] = main(jRot, nVib)
 %format long
 
 if nargin == 0 
-  %format long;
-  jRot = 0;
+  format long;
+  jRot = 1;
   nVib = 0;
   addpath(genpath('/home/wang/matlab/quantum-dynamics/common-cuda'));
   addpath(genpath('/home/wang/matlab/quantum-dynamics/build'));
@@ -41,13 +41,15 @@ H2eV = 27.21138505;
 
 % time
 
-time.total_steps = int32(5000);
-time.time_step = 5;
+CPU = 0;
+
+time.total_steps = int32(1);
+time.time_step = 10.0;
 time.steps = int32(0);
 
 % r1: R
 
-r1.n = int32(256);
+r1.n = int32(512);
 r1.r = linspace(0.4, 14.0, r1.n);
 r1.dr = r1.r(2) - r1.r(1);
 r1.mass = masses(1)*(masses(2)+masses(3))/(masses(1)+masses(2)+masses(3));
@@ -57,11 +59,11 @@ r1.delta = 0.12;
 
 dump1.Cd = 3.0;
 dump1.xd = 12.0;
-dump1.dump = WoodsSaxon(dump1.Cd, dump1.xd, r1.r);
+%dump1.dump = WoodsSaxon(dump1.Cd, dump1.xd, r1.r);
 
 % r2: r
 
-r2.n = int32(256);
+r2.n = int32(512);
 r2.r = linspace(0.4, 10.0, r2.n);
 r2.dr = r2.r(2) - r2.r(1);
 r2.mass = masses(2)*masses(3)/(masses(2)+masses(3));
@@ -70,7 +72,7 @@ r2.mass = masses(2)*masses(3)/(masses(2)+masses(3));
 
 dump2.Cd = 3.0;
 dump2.xd = 8.0;
-dump2.dump = WoodsSaxon(dump2.Cd, dump2.xd, r2.r);
+%dump2.dump = WoodsSaxon(dump2.Cd, dump2.xd, r2.r);
 
 % dividing surface
 
@@ -81,7 +83,7 @@ fprintf(' Dviding surface: %.8f\n', r2Div);
 
 % angle:
 
-dimensions = 2;
+dimensions = 3;
 
 if dimensions == 2 
   % for 2 dimensional case
@@ -92,7 +94,7 @@ if dimensions == 2
 else 
   % for 3 dimensional case
   theta.n = int32(120);
-  theta.m = int32(100);
+  theta.m = int32(120);
   [ theta.x, theta.w ] = GaussLegendre(theta.n);
 end
   
@@ -141,16 +143,25 @@ H3Data.CRP = CRP;
 
 % time evolution
 
+%CPU = 1
+if CPU == 1 
+  fprintf('\n == CPU test == \n\n');
+  tic
+  TimeEvolutionMex(H3Data);
+  toc
+  return
+end
+
+fprintf('\n == GPU test == \n\n');
+
 tic
 TimeEvolutionMexCUDA(H3Data);
 toc
 
-return
-
 tic
-psi = H3Data.psi;
+%psi = H3Data.psi;
 PSI = psi(1:2:end, :, :) + j*psi(2:2:end, :, :);
-a = sum(sum(conj(PSI).*PSI));
+a = sum(sum(conj(PSI).*pot.*PSI));
 a = reshape(a, [numel(a), 1]);
 sum(theta.w.*a)*r1.dr*r2.dr
 toc

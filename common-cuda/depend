@@ -1,4 +1,5 @@
 $(O)/die.o: die.C die.h matutils.h 
+$(O)/evolutionCUDA.o: evolutionCUDA.C evolutionCUDA.h complex.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h matlabArray.h
 $(O)/fftwinterface.o: fftwinterface.C fftwinterface.h complex.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fftwinterface.h
 $(O)/GaussLegendreMex.o: GaussLegendreMex.C fort.h
 $(O)/indent.o: indent.C indent.h
@@ -10,7 +11,12 @@ $(O)/rmatalgo.o: rmatalgo.C rmat.h mat.h vec.h lst.h die.h matutils.h indent.h f
 $(O)/rmato.o: rmato.C rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h out.h
 $(O)/sortcpp.o: sortcpp.C fort.h
 $(O)/timeEvolCUDA.o: timeEvolCUDA.C timer.h timeEvolCUDA.h complex.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fftwinterface.h fftwinterface.h matlabArray.h
-$(O)/TimeEvolutionMexCUDA.o: TimeEvolutionMexCUDA.C matutils.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fort.h timeEvolCUDA.h complex.h fftwinterface.h fftwinterface.h matlabArray.h
+$(O)/TimeEvolutionMexCUDA.o: TimeEvolutionMexCUDA.C matutils.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fort.h timeEvolCUDA.h complex.h fftwinterface.h fftwinterface.h matlabArray.h evolutionCUDA.h
 $(O)/wave2matlab.o: wave2matlab.C str.h die.h matutils.h
-$(O)/zeros.o: zeros.C fort.h complex.h
-$(O)/harmonic.o : harmonic.cu complex.h
+$(O)/zeros.o: zeros.C fort.h complex.h 
+$(O)/cumath.o : cumath.cu cumath.h complex.h
+$(O)/evolutionCUDA2.o : evolutionCUDA2.cu evolutionCUDA.h complex.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h matlabArray.h cumath.h
+$(O)/harmonic.o : harmonic.cu complex.h matutils.h mat.h fftwinterface.h rmat.h vec.h lst.h die.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h cumath.h
+$(O)/myreduction.o : myreduction.cu complex.h cumath.h myreduction.h
+$(O)/reduction_kernel.o : reduction_kernel.cu complex.h 
+$(O)/timeEvol2.o : timeEvol2.cu timeEvolCUDA.h complex.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h fftwinterface.h matlabArray.h cumath.h

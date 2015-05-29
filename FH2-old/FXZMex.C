@@ -57,11 +57,13 @@ void mexFunction(int nlhs, mxArray *plhs[],
   
   plhs[0] = mxCreateDoubleMatrix(m, n, mxREAL);
   double *pl0 = mxGetPr(plhs[0]);
-    
+
+  //#pragma omp parallel for if(m*n > 100)			\
+  //default(none) shared(r1, r2, r3, pl0) schedule(static, 1)           
   for(int i = 0; i < m*n; i++) {
     double &v = pl0[i];
     FH2FXZ(r1[i], r2[i], r3[i], v);
   }
-  
+
   cout << flush;
 }

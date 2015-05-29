@@ -1,9 +1,9 @@
 
 
-%function [] = main(jRot, nVib)
+function [] = main(jRot, nVib)
 
-clear all
-clc
+%clear all
+%clc
 format long
 
 %warning off MATLAB:maxNumCompThreads:Deprecated
@@ -13,20 +13,15 @@ format long
 if nargin == 0 
   jRot = 0;
   nVib = 0;
+  addpath(genpath('/home/wang/matlab/quantum-dynamics/build'))
+  addpath(genpath('/home/wang/matlab/quantum-dynamics/common'))
 end
-
-jRot = 0;
-nVib = 0;
 
 global H2eV 
 global HCl2Data
 
 H2eV = 27.21138505;
 VCl2Min = -0.09067089035558364815;
-
-%addpath('/home/wang/matlab/h3-quantum-dynamics', '-end')
-addpath(genpath('/home/wang/matlab/quantum-dynamics/build'))
-addpath(genpath('/home/wang/matlab/quantum-dynamics/common'))
 
 MassAU = 1.822888484929367e+03;
 
@@ -49,9 +44,9 @@ r1.n = int32(768);
 r1.r = linspace(1.5, 16.0, r1.n);
 r1.dr = r1.r(2) - r1.r(1);
 r1.mass = masses(1)*(masses(2)+masses(3))/(masses(1)+masses(2)+masses(3));
-r1.r0 = 12.0;
+r1.r0 = 11.0;
 r1.k0 = 1.0;
-r1.delta = 0.05;
+r1.delta = 0.06;
 
 eGT = 1/(2*r1.mass)*(r1.k0^2 + 1/(2*r1.delta^2))*H2eV
 
@@ -72,7 +67,7 @@ dump2.dump = WoodsSaxon(dump2.Cd, dump2.xd, r2.r);
 
 % dividing surface
 
-rd = 6.5;
+rd = 7.0;
 nDivdSurf = int32((rd - min(r2.r))/r2.dr);
 r2Div = double(nDivdSurf)*r2.dr + min(r2.r);
 fprintf(' Dviding surface: %.8f\n', r2Div);

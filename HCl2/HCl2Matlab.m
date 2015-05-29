@@ -5,8 +5,6 @@ global HCl2Data
 
 fprintf(' From HCl2Matlab\n')
 
-return
-
 if mod(HCl2Data.time.steps, 10) == 0
   PlotCRP();
   if HCl2Data.CRP.calculate_CRP == 1
