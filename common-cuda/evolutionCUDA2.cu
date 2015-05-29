@@ -17,6 +17,8 @@ struct RadialCoordinates
 
 __constant__ RadialCoordinates r1_dev;
 __constant__ RadialCoordinates r2_dev;
+__constant__ double dump1_dev[1024];
+__constant__ double dump2_dev[1024];
 
 inline int number_of_blocks(const int n_threads, const int n)
 { return n/n_threads*n_threads == n ? n/n_threads : n/n_threads+1; }
@@ -118,6 +120,16 @@ static __global__ void _legendre_psi_times_moments_of_inertia_(Complex *psiOut, 
   }
 }
 
+static __global__ void _dump_wavepacket_(Complex *psi, const int n1, const int n2, const int n_theta)
+{
+  const int index = threadIdx.x + blockDim.x*blockIdx.x;
+  if(index < n1*n2*n_theta) {
+    int i = -1; int j = -1; int k = -1;
+    cumath::index_2_ijk(index, n1, n2, n_theta, i, j, k);
+    psi[index] *= dump1_dev[i]*dump2_dev[j];
+  }
+}
+
 void gpu_memory_usage()
 {
   size_t free_byte ;
@@ -163,6 +175,18 @@ void EvolutionCUDA::allocate_device_memories()
     const double *w = theta.w;
     insist(w);
     checkCudaErrors(cudaMemcpy(w_dev, w, n_theta*sizeof(double), cudaMemcpyHostToDevice));
+  }
+
+  if(apply_dump()) {
+    size_t size = 0;
+    
+    checkCudaErrors(cudaGetSymbolSize(&size, dump1_dev));
+    insist(size/sizeof(double) > n1);
+    checkCudaErrors(cudaMemcpyToSymbol(dump1_dev, dump1.dump, n1*sizeof(double)));
+
+    checkCudaErrors(cudaGetSymbolSize(&size, dump2_dev));
+    insist(size/sizeof(double) > n2);
+    checkCudaErrors(cudaMemcpyToSymbol(dump2_dev, dump2.dump, n2*sizeof(double)));
   }
   
   copy_radial_coordinates_to_device(r1_dev, r1.n, r1.dr, r1.r[0], r1.mass);
@@ -432,13 +456,12 @@ void EvolutionCUDA::time_evolution()
     backward_fft_for_legendre_psi(1);
     
     evolution_with_rotational(dt/2);
-    
+
     const double e_rot = rotational_energy(0);
     
     backward_legendre_transform();
 
     const double e_pot = potential_energy();
-    
     const double module = module_for_psi();
     
     cout << " e_kin: " << e_kin << "\n"
@@ -446,13 +469,15 @@ void EvolutionCUDA::time_evolution()
 	 << " e_pot: " << e_pot << "\n"
 	 << " e_tot: " << e_kin + e_rot + e_pot << "\n"
 	 << " module: " << module << endl;
+
+    steps++;
     
+    dump_wavepacket();
+
     if(options.wave_to_matlab && steps%options.steps_to_copy_psi_from_device_to_host == 0) {
       copy_psi_from_device_to_host();
       wavepacket_to_matlab(options.wave_to_matlab);
     }
-    
-    steps++;
     
     sdkStopTimer(&timer); cout << " GPU time: " << sdkGetAverageTimerValue(&timer)*1e-3 << endl;
 
@@ -741,4 +766,20 @@ void EvolutionCUDA::copy_psi_from_device_to_host()
   const int &n_theta = theta.n;
   
   checkCudaErrors(cudaMemcpy(psi, psi_dev, n1*n2*n_theta*sizeof(Complex), cudaMemcpyDeviceToHost));
+}
+
+void EvolutionCUDA::dump_wavepacket()
+{
+  if(!apply_dump()) return;
+
+  cout << " Dump wavepacket" << endl;
+
+  const int &n1 = r1.n;
+  const int &n2 = r2.n;
+  const int &n_theta = theta.n;
+
+  const int n_threads = 1024;
+  const int n_blocks = number_of_blocks(n_threads, n1*n2*n_theta);
+
+  _dump_wavepacket_<<<n_blocks, n_threads>>>(psi_dev, n1, n2, n_theta);
 }

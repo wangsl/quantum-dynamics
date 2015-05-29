@@ -57,8 +57,6 @@ private:
   Complex *legendre_dev;
   Complex *weight_legendre_dev;
   Complex *legendre_psi_dev;
-  double *dump1_dev;
-  double *dump2_dev;
   
   int has_cublas_handle;
 
@@ -124,6 +122,7 @@ private:
 
   // dump functions
   int apply_dump() const { return (dump1.dump && dump2.dump) ? 1 : 0; }
+  void dump_wavepacket();
   
   void cuda_fft_test();  
 };
