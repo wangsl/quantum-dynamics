@@ -57,6 +57,11 @@ private:
   Complex *legendre_dev;
   Complex *weight_legendre_dev;
   Complex *legendre_psi_dev;
+
+  Complex *psi_on_surface_dev;
+  Complex *d_psi_on_surface_dev;
+  Complex *fai_on_surface_dev;
+  Complex *d_fai_on_surface_dev;
   
   int has_cublas_handle;
 
@@ -123,6 +128,21 @@ private:
   // dump functions
   int apply_dump() const { return (dump1.dump && dump2.dump) ? 1 : 0; }
   void dump_wavepacket();
+
+  // reaction probabilities
+  void setup_CRP_data_on_device();
+  void calculate_psi_gradient_on_dividing_surface();
+  void psi_time_to_fai_energy_on_surface(const double t);
+  void _calculate_reaction_probabilities();
+  void calculate_reaction_probabilities(const int cal_CRP, const double time);
+  
+  void fai_on_dividing_surface_with_legendre_weight(const int op);
+
+  void fai_on_dividing_surface_times_legendre_weight()
+  { fai_on_dividing_surface_with_legendre_weight(1); }
+  
+  void fai_on_dividing_surface_divides_legendre_weight()
+  { fai_on_dividing_surface_with_legendre_weight(-1); }
   
   void cuda_fft_test();  
 };

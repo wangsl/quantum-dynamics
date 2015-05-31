@@ -1,6 +1,7 @@
 
 #include "evolutionCUDA.h"
 #include "cumath.h"
+#include "gradients.h"
 
 void cuda_test();
 
@@ -19,6 +20,8 @@ __constant__ RadialCoordinates r1_dev;
 __constant__ RadialCoordinates r2_dev;
 __constant__ double dump1_dev[1024];
 __constant__ double dump2_dev[1024];
+__constant__ double energies_dev[1024];
+__constant__ double legendre_weight_dev[256];
 
 inline int number_of_blocks(const int n_threads, const int n)
 { return n/n_threads*n_threads == n ? n/n_threads : n/n_threads+1; }
@@ -130,6 +133,42 @@ static __global__ void _dump_wavepacket_(Complex *psi, const int n1, const int n
   }
 }
 
+static __global__ void _psi_time_to_fai_energy_on_surface_(const int n, const int nE,
+							   const double t, const double dt,
+							   Complex *psi, Complex *fai,
+							   Complex *dpsi, Complex *dfai)
+{
+  extern __shared__ Complex exp_iet_dt[];
+  
+  for(int i = threadIdx.x; i < nE; i += blockDim.x) 
+    exp_iet_dt[i] = exp(Complex(0.0, t)*energies_dev[i])*dt;
+  __syncthreads();
+
+  const int index = threadIdx.x + blockDim.x*blockIdx.x;
+  
+  if(index < n*nE) {
+    int i = -1; int iE = -1;
+    cumath::index_2_ij(index, n, nE, i, iE);
+    fai[index] += exp_iet_dt[iE] * psi[index];
+    dfai[index] += exp_iet_dt[iE] * dpsi[index];
+  }
+}
+
+static __global__ void _fai_on_dividing_surface_with_legendre_weight_(const int n1, const int n_theta,
+								      const int nE, 
+								      Complex *fai, const int op)
+{
+  const int index = threadIdx.x + blockDim.x*blockIdx.x;
+  if(index < n1*n_theta*nE) {
+    int i = -1; int k = -1; int iE = -1;
+    cumath::index_2_ijk(index, n1, n_theta, nE, i, k, iE);
+    if(op == 1)
+      fai[index] *= legendre_weight_dev[k];
+    else if(op == -1)
+      fai[index] /= legendre_weight_dev[k];
+  }
+}
+
 void gpu_memory_usage()
 {
   size_t free_byte ;
@@ -145,6 +184,7 @@ void gpu_memory_usage()
 void EvolutionCUDA::allocate_device_memories()
 { 
   cout << " Allocate device memory" << endl;
+
   const int &n1 = r1.n;
   const int &n2 = r2.n;
   const int &n_theta = theta.n;
@@ -188,7 +228,9 @@ void EvolutionCUDA::allocate_device_memories()
     insist(size/sizeof(double) > n2);
     checkCudaErrors(cudaMemcpyToSymbol(dump2_dev, dump2.dump, n2*sizeof(double)));
   }
-  
+
+  if(CRP.calculate_CRP) setup_CRP_data_on_device();
+
   copy_radial_coordinates_to_device(r1_dev, r1.n, r1.dr, r1.r[0], r1.mass);
   copy_radial_coordinates_to_device(r2_dev, r2.n, r2.dr, r2.r[0], r2.mass);
 
@@ -436,7 +478,7 @@ void EvolutionCUDA::time_evolution()
   for(int k = 0; k < total_steps; k++) {
     
     cout << "\n Step: " << k << endl;
-    
+
     sdkResetTimer(&timer); sdkStartTimer(&timer);
 
     if(k == 0 && steps == 0) evolution_with_potential(-dt/2);
@@ -473,6 +515,9 @@ void EvolutionCUDA::time_evolution()
     steps++;
     
     dump_wavepacket();
+    
+    const int calculate_CRP = steps%options.steps_to_copy_psi_from_device_to_host == 0 ? 1 : 0;
+    //calculate_reaction_probabilities(calculate_CRP, (k+1)*dt);
 
     if(options.wave_to_matlab && steps%options.steps_to_copy_psi_from_device_to_host == 0) {
       copy_psi_from_device_to_host();
@@ -782,4 +827,150 @@ void EvolutionCUDA::dump_wavepacket()
   const int n_blocks = number_of_blocks(n_threads, n1*n2*n_theta);
 
   _dump_wavepacket_<<<n_blocks, n_threads>>>(psi_dev, n1, n2, n_theta);
+}
+
+void EvolutionCUDA::setup_CRP_data_on_device()
+{
+  if(psi_on_surface_dev && d_psi_on_surface_dev && 
+     fai_on_surface_dev && d_fai_on_surface_dev) return;
+  
+  const int &n1 = r1.n;
+  const int &n_theta = theta.n;
+  const int &n_energies = CRP.n_energies;
+  
+  cout << " Allocate CRP data memory on device" << endl;
+  
+  size_t size = 0;
+
+  checkCudaErrors(cudaGetSymbolSize(&size, legendre_weight_dev));
+  insist(size/sizeof(double) > n_theta);
+  checkCudaErrors(cudaMemcpyToSymbol(legendre_weight_dev, theta.w, n_theta*sizeof(double)));
+
+  checkCudaErrors(cudaGetSymbolSize(&size, energies_dev));
+  insist(size/sizeof(double) > CRP.n_energies);
+  checkCudaErrors(cudaMemcpyToSymbol(energies_dev, (const double *) CRP.energies, 
+				     CRP.n_energies*sizeof(double)));
+  
+  if(!psi_on_surface_dev) {
+    checkCudaErrors(cudaMalloc(&psi_on_surface_dev, n1*n_theta*sizeof(Complex)));
+    insist(psi_on_surface_dev);
+  }
+  
+  if(!d_psi_on_surface_dev) {
+    checkCudaErrors(cudaMalloc(&d_psi_on_surface_dev, n1*n_theta*sizeof(Complex)));
+    insist(d_psi_on_surface_dev);
+  }
+  
+  if(!fai_on_surface_dev) {
+    checkCudaErrors(cudaMalloc(&fai_on_surface_dev, n1*n_theta*n_energies*sizeof(Complex)));
+    insist(fai_on_surface_dev);
+    checkCudaErrors(cudaMemset(fai_on_surface_dev, 0, n1*n_theta*n_energies*sizeof(Complex)));
+  }
+  
+  if(!d_fai_on_surface_dev) {
+    checkCudaErrors(cudaMalloc(&d_fai_on_surface_dev, n1*n_theta*n_energies*sizeof(Complex)));
+    insist(d_fai_on_surface_dev);
+    checkCudaErrors(cudaMemset(d_fai_on_surface_dev, 0, n1*n_theta*n_energies*sizeof(Complex)));
+  }
+}
+
+void EvolutionCUDA::calculate_psi_gradient_on_dividing_surface()
+{
+  cout << " Calculate Psi gradients on dividing surface" << endl;
+
+  setup_CRP_data_on_device();
+
+  const int &n1 = r1.n;
+  const int &n2 = r2.n;
+  const int &n_theta = theta.n;
+  const double &dr2 = r2.dr;
+
+  const int &n_dividing_surface = CRP.n_dividing_surface;
+  
+  // not sure why CRP.n_gradient_points always gives segmentation fault error
+  // CRP.n_gradient_points;
+  const int n_gradient_points = 11;
+  insist(n_gradient_points == 11);
+
+  const int n_threads = 256;
+  const int n_blocks = number_of_blocks(n_threads, n1*n_theta);
+  
+  gradients_3d<Complex><<<n_blocks, n_threads>>>(n1, n2, n_theta, n_dividing_surface, dr2, psi_dev,
+						 psi_on_surface_dev, d_psi_on_surface_dev,
+						 n_gradient_points);
+}
+
+void EvolutionCUDA::psi_time_to_fai_energy_on_surface(const double t)
+{
+  cout << " Psi to Fai on dividing surface" << endl;
+
+  const int &n1 = r1.n;
+  const int &n_theta = theta.n;
+  const int &n_energies = CRP.n_energies;
+  const double &dt = time.time_step;
+
+  const int n_threads = 512;
+  const int n_blocks = number_of_blocks(n_threads, n1*n_theta*n_energies);
+
+  _psi_time_to_fai_energy_on_surface_<<<n_blocks, n_threads, n_energies*sizeof(Complex)>>>
+    (n1*n_theta, n_energies, t, dt, 
+     psi_on_surface_dev, fai_on_surface_dev,
+     d_psi_on_surface_dev, d_fai_on_surface_dev);
+}
+
+void EvolutionCUDA::_calculate_reaction_probabilities()
+{
+  const int &n1 = r1.n;
+  const int &n_theta = theta.n;
+  const double &dr1 = r1.dr;
+  const double &mu2 = r2.mass;
+  
+  const int &n_energies = CRP.n_energies;
+  RVec &crp = CRP.CRP;
+  const RVec &eta_sq = CRP.eta_sq;
+  
+  const double dr1_mu2 = dr1/mu2;
+  
+  fai_on_dividing_surface_times_legendre_weight();  
+  
+  for(int iE = 0; iE < n_energies; iE++) {
+    const Complex *fai_ = fai_on_surface_dev + iE*n1*n_theta;
+    const Complex *dfai_ = d_fai_on_surface_dev + iE*n1*n_theta;
+    Complex dot(0.0, 0.0);
+    insist(cublasZdotc(cublas_handle, n1*n_theta,
+		       (cuDoubleComplex *) dfai_, 1, 
+		       (cuDoubleComplex *) fai_, 1, 
+		       (cuDoubleComplex *) &dot) == CUBLAS_STATUS_SUCCESS);
+
+    crp[iE] = dot.imag()/eta_sq[iE]*dr1_mu2;
+  }
+  
+  fai_on_dividing_surface_divides_legendre_weight();
+}
+
+void EvolutionCUDA::calculate_reaction_probabilities(const int cal_CRP, const double time)
+{
+  cout << " Calculate reaction probabilities" << endl;
+
+  setup_CRP_data_on_device();
+  calculate_psi_gradient_on_dividing_surface();
+  psi_time_to_fai_energy_on_surface(time);
+  
+  if(cal_CRP) 
+    _calculate_reaction_probabilities();
+}
+
+void EvolutionCUDA::fai_on_dividing_surface_with_legendre_weight(const int op)
+{
+  insist(op == 1 || op == -1);
+  
+  const int &n1 = r1.n;
+  const int &n_theta = theta.n;
+  const int &n_energies = CRP.n_energies;
+  
+  const int n_threads = 512;
+  const int n_blocks = number_of_blocks(n_threads, n1*n_theta*n_energies);
+  
+  _fai_on_dividing_surface_with_legendre_weight_<<<n_blocks, n_threads>>>
+    (n1, n_theta, n_energies, fai_on_surface_dev, op);
 }

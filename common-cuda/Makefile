@@ -43,7 +43,7 @@ MEXA64Files = \
 	$(O)/GaussLegendreMex.mexa64
 
 CUDAObjs = $(O)/harmonic.o $(O)/timeEvol2.o $(O)/cumath.o $(O)/evolutionCUDA2.o \
-	$(O)/myreduction.o
+	$(O)/myreduction.o  $(O)/gradients.o
 #	$(O)/reduction_kernel.o
 
 CUDALinkObj = $(O)/cudalink.o

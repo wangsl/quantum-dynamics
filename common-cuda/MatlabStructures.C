@@ -60,7 +60,7 @@ Options::Options(const mxArray *mx) :
   mx(mx),
   wave_to_matlab(0),
   test_name(0),
-  steps_to_copy_psi_from_device_to_host (*(int *) mxGetData(mx, "steps_to_copy_psi_from_device_to_host"))
+  steps_to_copy_psi_from_device_to_host(*(int *) mxGetData(mx, "steps_to_copy_psi_from_device_to_host"))
 {
   wave_to_matlab = mxGetString(mx, "wave_to_matlab");
   if(wave_to_matlab)

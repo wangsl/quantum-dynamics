@@ -8,7 +8,6 @@
 #include <cufft.h>
 #include <helper_functions.h>
 #include <helper_cuda.h>
-//#include <sm_30_intrinsics.hpp>
 
 #include "complex.h"
 
@@ -23,8 +22,15 @@ namespace cumath {
 
   __device__ __host__ inline double sq(const double x) { return x*x; }
 
+  __device__ __host__ inline int ij_2_index(const int n1, const int n2, const int i, const int j)
+  { return j*n1 + i; }
+
   __device__ __host__ inline void index_2_ij(const int index, const int n1, const int n2, int &i, int &j)
   {  j = index/n1; i = index - j*n1; }
+  
+  __device__ __host__ inline int ijk_2_index(const int n1, const int n2, const int n3, 
+					     const int i, const int j, const int k)
+  { return (k*n2 + j)*n1 + i; }
   
   __device__ __host__ inline void index_2_ijk(const int index, const int n1, const int n2, const int n3, 
 					      int &i, int &j, int &k)
