@@ -145,6 +145,7 @@ private:
   { fai_on_dividing_surface_with_legendre_weight(-1); }
   
   void cuda_fft_test();  
+  void psi_module_test();
 };
 
 void gpu_memory_usage();

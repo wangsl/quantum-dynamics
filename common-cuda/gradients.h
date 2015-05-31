@@ -5,7 +5,7 @@
 #include "complex.h"
 
 template<class T> __global__ void gradients_3d(const int n1, const int n2, const int n3,
-					       const int n2p, const double dx,
+					       const int n2p, const double dx2,
 					       const T *f, T *v, T *g, const int n_points);
 
 #endif /* GRADIENTS_H */
