@@ -1,5 +1,5 @@
 
-/* created at: 2015-05-28 22:55:12 */
+/* created at: 2015-05-31 14:47:23 */
 
 #include <iostream>
 using namespace std;
@@ -86,12 +86,12 @@ ostream & operator <<(ostream &s, const CummulativeReactionProbabilities &c)
 
 void CummulativeReactionProbabilities::write_fields(ostream &s) const
 {
+  s << Indent() << "energies " << energies << "\n";
+  s << Indent() << "eta_sq " << eta_sq << "\n";
+  s << Indent() << "CRP " << CRP << "\n";
   s << Indent() << "n_dividing_surface " << n_dividing_surface << "\n";
   s << Indent() << "n_gradient_points " << n_gradient_points << "\n";
   s << Indent() << "n_energies " << n_energies << "\n";
   s << Indent() << "calculate_CRP " << calculate_CRP << "\n";
-  s << Indent() << "energies " << energies << "\n";
-  s << Indent() << "eta_sq " << eta_sq << "\n";
-  s << Indent() << "CRP " << CRP << "\n";
 }
 

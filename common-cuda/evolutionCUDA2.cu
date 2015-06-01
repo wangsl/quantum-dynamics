@@ -212,7 +212,7 @@ void EvolutionCUDA::allocate_device_memories()
   const int n = n1*n2*n_theta;
   
   cout << " Wavepacket size: " << n1 << " " << n2 << " " << n_theta << " " << n << endl;
-  
+
   if(!pot_dev) {
     checkCudaErrors(cudaMalloc(&pot_dev, n*sizeof(double)));
     insist(pot);
@@ -908,19 +908,11 @@ void EvolutionCUDA::calculate_psi_gradient_on_dividing_surface()
   const int &n_theta = theta.n;
   const double &dr2 = r2.dr;
 
-  //const int &n_dividing_surface = CRP.n_dividing_surface;
-  const int n_dividing_surface = 122;
-
-  cout << "n_dividing_surface = " << n_dividing_surface << endl;
-  
-  // not sure why CRP.n_gradient_points always gives segmentation fault error
-  // CRP.n_gradient_points;
-  const int n_gradient_points = 11;
-  insist(n_gradient_points == 11);
+  const int &n_dividing_surface = CRP.n_dividing_surface;
+  const int &n_gradient_points = CRP.n_gradient_points;
 
   const int n_threads = 512;
   const int n_blocks = number_of_blocks(n_threads, n1*n_theta);
-
   
   insist(n_dividing_surface < n2);
   
@@ -949,8 +941,6 @@ void EvolutionCUDA::psi_time_to_fai_energy_on_surface(const double t)
 
 void EvolutionCUDA::_calculate_reaction_probabilities()
 {
-  cout << " To _calculate_reaction_probabilities" << endl;
-
   const int &n1 = r1.n;
   const int &n_theta = theta.n;
   const double &dr1 = r1.dr;
