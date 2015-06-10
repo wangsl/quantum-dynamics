@@ -69,6 +69,13 @@ class Complex
     }
     return *this;
   }
+
+  __DEVICE_HOST__ Complex & operator =(const double r)
+  { 
+    re = r;
+    im = 0.0;
+    return *this;
+  }
   
   __DEVICE_HOST__ friend int operator ==(const Complex &c1, const Complex &c2)
   { return (c1.re == c2.re && c1.im == c2.im); }

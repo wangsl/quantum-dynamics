@@ -535,20 +535,18 @@ void EvolutionCUDA::time_evolution()
 	 << " e_tot: " << e_kin + e_rot + e_pot << "\n"
 	 << " module: " << module << endl;
 
-    psi_module_test();
-
     steps++;
     
     const int calculate_CRP = steps%options.steps_to_copy_psi_from_device_to_host == 0 ? 1 : 0;
     calculate_reaction_probabilities(calculate_CRP, (k+1)*dt);
-
+    
     if(options.wave_to_matlab && steps%options.steps_to_copy_psi_from_device_to_host == 0) {
       copy_psi_from_device_to_host();
       wavepacket_to_matlab(options.wave_to_matlab);
     }
     
     sdkStopTimer(&timer); cout << " GPU time: " << sdkGetAverageTimerValue(&timer)*1e-3 << endl;
-
+    
     cout.flush();
   }
 }
@@ -916,9 +914,22 @@ void EvolutionCUDA::calculate_psi_gradient_on_dividing_surface()
   
   insist(n_dividing_surface < n2);
   
+#if 1
+  if(!has_copied_gradient_coeffients_to_device) {
+    copy_gradient_coefficients_to_device(n_gradient_points);
+    has_copied_gradient_coeffients_to_device = 1;
+  }
+  
+  gradients2_3d<Complex><<<n_blocks, n_threads, n_gradient_points/2*sizeof(double)>>>
+    (n1, n2, n_theta, n_dividing_surface, dr2, 
+     psi_dev, psi_on_surface_dev, d_psi_on_surface_dev,
+     n_gradient_points);
+  
+#else 
   gradients_3d<Complex><<<n_blocks, n_threads>>>(n1, n2, n_theta, n_dividing_surface, dr2, 
 						 psi_dev, psi_on_surface_dev, d_psi_on_surface_dev,
 						 n_gradient_points);
+#endif
 }
 
 void EvolutionCUDA::psi_time_to_fai_energy_on_surface(const double t)

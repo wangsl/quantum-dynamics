@@ -67,6 +67,8 @@ private:
 
   int has_cufft_plan_for_psi;
   int has_cufft_plan_for_legendre_psi;
+
+  int has_copied_gradient_coeffients_to_device;
   
 #ifdef __NVCC__
   cublasHandle_t cublas_handle;

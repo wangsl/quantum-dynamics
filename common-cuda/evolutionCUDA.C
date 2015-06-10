@@ -21,7 +21,9 @@ EvolutionCUDA::EvolutionCUDA(const MatlabArray<double> &m_pot_,
   legendre_dev(0), weight_legendre_dev(0), legendre_psi_dev(0),
   psi_on_surface_dev(0), d_psi_on_surface_dev(0),
   fai_on_surface_dev(0), d_fai_on_surface_dev(0),
-  has_cublas_handle(0), has_cufft_plan_for_psi(0), has_cufft_plan_for_legendre_psi(0)
+  has_cublas_handle(0), has_cufft_plan_for_psi(0), 
+  has_cufft_plan_for_legendre_psi(0),
+  has_copied_gradient_coeffients_to_device(0)
 { 
   pot = m_pot.data;
   insist(pot);
