@@ -7,8 +7,11 @@ global H3Data
 
 fprintf(' From C2Matlab\n')
 
-if mod(H3Data.time.steps, 20) == 0
+if mod(H3Data.time.steps, H3Data.options.steps_to_copy_psi_from_device_to_host) == 0
   PlotPotWave(H3Data.r1, H3Data.r2, H3Data.pot, H3Data.psi)
+  PlotCRP
+  CRP = H3Data.CRP;
+  save(H3Data.options.CRPMatFile, 'CRP');
 end
 
 return

@@ -1,7 +1,7 @@
   
 % $Id$
 
-function [] = main(jRot, nVib)
+function [] = mainCPU(jRot, nVib)
 
 %clear all
 %close all
@@ -11,7 +11,7 @@ function [] = main(jRot, nVib)
 
 if nargin == 0 
   format long;
-  jRot = 1;
+  jRot = 0;
   nVib = 0;
   addpath(genpath('/home/wang/matlab/quantum-dynamics/common-cuda'));
   addpath(genpath('/home/wang/matlab/quantum-dynamics/build'));
@@ -41,15 +41,15 @@ H2eV = 27.21138505;
 
 % time
 
-CPU = 0;
+CPU = 1;
 
-time.total_steps = int32(10000);
-time.time_step = 2.0;
+time.total_steps = int32(20);
+time.time_step = 5.0;
 time.steps = int32(0);
 
 % r1: R
 
-r1.n = int32(768);
+r1.n = int32(256);
 r1.r = linspace(0.4, 14.0, r1.n);
 r1.dr = r1.r(2) - r1.r(1);
 r1.mass = masses(1)*(masses(2)+masses(3))/(masses(1)+masses(2)+masses(3));
@@ -59,11 +59,11 @@ r1.delta = 0.12;
 
 dump1.Cd = 3.0;
 dump1.xd = 12.0;
-%dump1.dump = WoodsSaxon(dump1.Cd, dump1.xd, r1.r);
+dump1.dump = WoodsSaxon(dump1.Cd, dump1.xd, r1.r);
 
 % r2: r
 
-r2.n = int32(768);
+r2.n = int32(256);
 r2.r = linspace(0.4, 10.0, r2.n);
 r2.dr = r2.r(2) - r2.r(1);
 r2.mass = masses(2)*masses(3)/(masses(2)+masses(3));
@@ -72,7 +72,7 @@ r2.mass = masses(2)*masses(3)/(masses(2)+masses(3));
 
 dump2.Cd = 3.0;
 dump2.xd = 8.0;
-%dump2.dump = WoodsSaxon(dump2.Cd, dump2.xd, r2.r);
+dump2.dump = WoodsSaxon(dump2.Cd, dump2.xd, r2.r);
 
 % dividing surface
 
@@ -93,8 +93,8 @@ if dimensions == 2
   theta.w = 2.0;
 else 
   % for 3 dimensional case
-  theta.n = int32(190);
-  theta.m = int32(190);
+  theta.n = int32(120);
+  theta.m = int32(120);
   [ theta.x, theta.w ] = GaussLegendre(theta.n);
 end
   
@@ -107,6 +107,7 @@ theta.legendre = theta.legendre';
 
 options.wave_to_matlab = 'C2Matlab.m';
 options.CRPMatFile = sprintf('CRPMat-j%d-v%d.mat', jRot, nVib);
+options.steps_to_copy_psi_from_device_to_host = int32(20);
 
 % setup potential energy surface and initial wavepacket
 pot = H3PESJacobi(r1.r, r2.r, acos(theta.x), masses);
@@ -114,6 +115,7 @@ pot = H3PESJacobi(r1.r, r2.r, acos(theta.x), masses);
 %jRot = 0;
 %nVib = 1;
 [ psi, eH2, psiH2 ] = InitWavePacket(r1, r2, theta, jRot, nVib);
+PlotPotWave(r1, r2, pot, psi);
 
 % cummulative reaction probabilities
 

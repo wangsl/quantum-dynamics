@@ -3,6 +3,8 @@
 
 function [] = PlotPotWave(r1, r2, pot, psi)
 
+return
+
 persistent has_PotWavePlot
 persistent hpsi
 

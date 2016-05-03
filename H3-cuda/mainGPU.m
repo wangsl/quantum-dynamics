@@ -1,17 +1,22 @@
   
 % $Id$
 
-function [] = main(jRot, nVib)
+function [] = mainGPU(jRot, nVib)
 
 %clear all
-%close all
-%clc
+close all
+clc
 
-%format long
+format long
+
+addpath(genpath('/home/wang/matlab/quantum-dynamics/common-cuda'));
+addpath(genpath('/home/wang/matlab/quantum-dynamics/build'));
 
 if nargin == 0 
+  clear all
+  clc
   format long;
-  jRot = 1;
+  jRot = 0;
   nVib = 0;
   addpath(genpath('/home/wang/matlab/quantum-dynamics/common-cuda'));
   addpath(genpath('/home/wang/matlab/quantum-dynamics/build'));
@@ -22,7 +27,7 @@ global UseLSTH
 global H2eV 
 global H3Data
 
-setenv('OMP_NUM_THREADS', '20');
+%setenv('OMP_NUM_THREADS', '20');
 
 % UseLSTH = true;
 
@@ -43,47 +48,47 @@ H2eV = 27.21138505;
 
 CPU = 0;
 
-time.total_steps = int32(10000);
-time.time_step = 2.0;
+time.total_steps = int32(100000);
+time.time_step = 1;
 time.steps = int32(0);
 
 % r1: R
 
-r1.n = int32(768);
-r1.r = linspace(0.4, 14.0, r1.n);
+r1.n = int32(2048);
+r1.r = linspace(0.4, 16.0, r1.n);
 r1.dr = r1.r(2) - r1.r(1);
 r1.mass = masses(1)*(masses(2)+masses(3))/(masses(1)+masses(2)+masses(3));
-r1.r0 = 8.0;
-r1.k0 = 4.0;
+r1.r0 = 11.0;
+r1.k0 = 0.5;
 r1.delta = 0.12;
 
 dump1.Cd = 3.0;
-dump1.xd = 12.0;
-%dump1.dump = WoodsSaxon(dump1.Cd, dump1.xd, r1.r);
+dump1.xd = 14.0;
+dump1.dump = WoodsSaxon(dump1.Cd, dump1.xd, r1.r);
 
 % r2: r
 
-r2.n = int32(768);
-r2.r = linspace(0.4, 10.0, r2.n);
+r2.n = int32(2048);
+r2.r = linspace(0.4, 14.0, r2.n);
 r2.dr = r2.r(2) - r2.r(1);
 r2.mass = masses(2)*masses(3)/(masses(2)+masses(3));
 
 % dump functions
 
 dump2.Cd = 3.0;
-dump2.xd = 8.0;
-%dump2.dump = WoodsSaxon(dump2.Cd, dump2.xd, r2.r);
+dump2.xd = 12.0;
+dump2.dump = WoodsSaxon(dump2.Cd, dump2.xd, r2.r);
 
 % dividing surface
 
-rd = 5.0;
+rd = 8.0;
 nDivdSurf = int32((rd - min(r2.r))/r2.dr);
 r2Div = double(nDivdSurf)*r2.dr + min(r2.r);
 fprintf(' Dviding surface: %.8f\n', r2Div);
 
 % angle:
 
-dimensions = 3;
+dimensions = 2;
 
 if dimensions == 2 
   % for 2 dimensional case
@@ -107,6 +112,7 @@ theta.legendre = theta.legendre';
 
 options.wave_to_matlab = 'C2Matlab.m';
 options.CRPMatFile = sprintf('CRPMat-j%d-v%d.mat', jRot, nVib);
+options.steps_to_copy_psi_from_device_to_host = int32(1000);
 
 % setup potential energy surface and initial wavepacket
 pot = H3PESJacobi(r1.r, r2.r, acos(theta.x), masses);
@@ -115,14 +121,18 @@ pot = H3PESJacobi(r1.r, r2.r, acos(theta.x), masses);
 %nVib = 1;
 [ psi, eH2, psiH2 ] = InitWavePacket(r1, r2, theta, jRot, nVib);
 
+PlotPotWave(r1, r2, pot, psi);
+%return
+
 % cummulative reaction probabilities
 
 CRP.eDiatomic = eH2;
-CRP.n_dividing_surface = nDivdSurf;
-CRP.n_gradient_points = int32(11);
+CRP.n_dividing_surface = int32(nDivdSurf);
+CRP.n_gradient_points = int32(51);
 CRP.n_energies = int32(400);
-eLeft = 0.4/H2eV;
-eRight = 4.0/H2eV;
+eLeft = 0.1/H2eV + eH2;
+%eLeft = 0.001/H2eV; % + eH2;
+eRight = 2.0/H2eV + eH2;
 CRP.energies = linspace(eLeft, eRight, CRP.n_energies);
 CRP.eta_sq = EtaSq(r1, CRP.energies-eH2);
 CRP.CRP = zeros(size(CRP.energies));
