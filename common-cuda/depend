@@ -15,7 +15,9 @@ $(O)/TimeEvolutionMexCUDA.o: TimeEvolutionMexCUDA.C matutils.h MatlabStructures.
 $(O)/wave2matlab.o: wave2matlab.C str.h die.h matutils.h
 $(O)/zeros.o: zeros.C fort.h complex.h 
 $(O)/cumath.o : cumath.cu cumath.h complex.h
-$(O)/evolutionCUDA2.o : evolutionCUDA2.cu evolutionCUDA.h complex.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h matlabArray.h cumath.h
+$(O)/evolutionCUDA2.o : evolutionCUDA2.cu evolutionCUDA.h complex.h MatlabStructures.h rmat.h mat.h vec.h lst.h die.h matutils.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h matlabArray.h cumath.h gradients.h
+$(O)/gradients2.o : gradients2.cu matutils.h gradients.h complex.h cumath.h
+$(O)/gradients.o : gradients.cu gradients.h complex.h cumath.h 
 $(O)/harmonic.o : harmonic.cu complex.h matutils.h mat.h fftwinterface.h rmat.h vec.h lst.h die.h indent.h fmacro.h rvecalgo.h rmatalgo.h fint.h cumath.h
 $(O)/myreduction.o : myreduction.cu complex.h cumath.h myreduction.h
 $(O)/reduction_kernel.o : reduction_kernel.cu complex.h 

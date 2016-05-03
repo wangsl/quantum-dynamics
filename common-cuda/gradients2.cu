@@ -21,7 +21,6 @@ For[n = 1, n <= 25, n++,
  B = Inverse[A];
  Print[B[[1]]];
  ]
-
 **/
 
 void copy_gradient_coefficients_to_device(const int n_points)

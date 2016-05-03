@@ -18,9 +18,9 @@ struct RadialCoordinates
 
 __constant__ RadialCoordinates r1_dev;
 __constant__ RadialCoordinates r2_dev;
-__constant__ double dump1_dev[1024];
-__constant__ double dump2_dev[1024];
-__constant__ double energies_dev[1024];
+__constant__ double dump1_dev[2048+10];
+__constant__ double dump2_dev[2048+10];
+__constant__ double energies_dev[2048];
 __constant__ double legendre_weight_dev[256];
 
 inline int number_of_blocks(const int n_threads, const int n)
