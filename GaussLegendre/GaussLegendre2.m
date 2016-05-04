@@ -5,7 +5,10 @@ if n < 1 || n > 599
   error('argument should be 1 <= n <= 599')
 end
 
-data_dir = '/home/wang/matlab/quantum-dynamics/GaussLegendre';
+data_dir = getenv('GAUSS_LEGENDRE_DIR');
+if isempty(data_dir)
+  data_dir = '/home/wang/matlab/quantum-dynamics/GaussLegendre';
+end
 
 grids_file = strcat(data_dir, '/', int2str(n), '-LegendreGauss.grids');
 
