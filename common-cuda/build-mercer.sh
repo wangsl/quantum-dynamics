@@ -86,7 +86,9 @@ function main()
     module load matlab/2015b
     module load cuda/7.5.18
     
-    local util=$HOME/bin/intel/util.sh
+    export MY_INTEL_PATH=$HOME/bin/intel
+    
+    local util=$MY_INTEL_PATH/util.sh
     if [ -e $util ]; then
 	source $util
     fi
